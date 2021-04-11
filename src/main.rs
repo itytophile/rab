@@ -1,12 +1,22 @@
-use std::fs::File;
-use ron::de::from_reader;
+mod armor_ron;
+use armor_ron::{Armor, get_armor_list};
 
-mod armor_ron_description;
-use armor_ron_description::Armor;
+const WAISTS_PATH: &str = "waists.ron";
+const HELMETS_PATH: &str = "helmets.ron";
+const ARMS_PATH: &str = "arms.ron";
+const LEGS_PATH: &str = "legs.ron";
+const CHESTS_PATH: &str = "chests.ron";
 
 fn main() {
-    let file = File::open("waists.ron").expect("Failed opening file");
-    let helmets: Vec<Armor> = from_reader(file).unwrap();
+    let waists: Vec<Armor> = get_armor_list(WAISTS_PATH);
+    let helmets: Vec<Armor> = get_armor_list(HELMETS_PATH);
+    let arms: Vec<Armor> = get_armor_list(ARMS_PATH);
+    let legs: Vec<Armor> = get_armor_list(LEGS_PATH);
+    let chests: Vec<Armor> = get_armor_list(CHESTS_PATH);
 
-    dbg!(&helmets[0]);
+    dbg!(waists.len());
+    dbg!(helmets.len());
+    dbg!(arms.len());
+    dbg!(legs.len());
+    dbg!(chests.len());
 }
