@@ -3,39 +3,39 @@ use ron::de::from_reader;
 use serde::Deserialize;
 use std::{collections::HashMap, fs::File};
 
-#[derive(Debug, Deserialize)]
-enum Gender {
+#[derive(Debug, Deserialize, Clone)]
+pub enum Gender {
     Female,
     Male,
     Neutral,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Armor {
-    name: String,
-    skills: Vec<(Skill, u8)>,
-    slots: Vec<u8>,
-    rare: u8,
-    defense: u8,
-    fire: i8,
-    water: i8,
-    thunder: i8,
-    ice: i8,
-    dragon: i8,
-    gender: Gender,
+    pub name: String,
+    pub skills: Vec<(Skill, u8)>,
+    pub slots: Vec<u8>,
+    pub rare: u8,
+    pub defense: u8,
+    pub fire: i8,
+    pub water: i8,
+    pub thunder: i8,
+    pub ice: i8,
+    pub dragon: i8,
+    pub gender: Gender,
 }
 
 pub fn get_armor_list(path: &str) -> Vec<Armor> {
     from_reader(File::open(path).expect(&format!("Failed opening {}", path))).unwrap()
 }
 
-struct SkillDesc {
-    limit: u8,
-    jewel_size: Option<u8>,
+pub struct SkillDesc {
+    pub limit: u8,
+    pub jewel_size: Option<u8>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
-enum Skill {
+#[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Skill {
     Botanist,
     DefenseBoost,
     ItemProlonger,
@@ -139,7 +139,7 @@ enum Skill {
 }
 
 lazy_static! {
-    static ref SKILL_LIMIT_JEWEL_SIZE: HashMap<Skill, SkillDesc> = {
+    pub static ref SKILL_LIMIT_JEWEL_SIZE: HashMap<Skill, SkillDesc> = {
         let mut m = HashMap::new();
         use Skill::*;
         m.insert(
