@@ -1,5 +1,8 @@
 mod armor_ron;
-use std::cmp::min;
+use std::{
+    cmp::{max, min},
+    iter,
+};
 
 use armor_ron::{get_armor_list, Armor, Skill, SKILL_LIMIT_JEWEL_SIZE};
 
@@ -8,6 +11,76 @@ const HELMETS_PATH: &str = "helmets.ron";
 const ARMS_PATH: &str = "arms.ron";
 const LEGS_PATH: &str = "legs.ron";
 const CHESTS_PATH: &str = "chests.ron";
+
+type Jewels = [Option<(Skill, u8)>; 3];
+
+struct Build {
+    helmet: Option<(Armor, Jewels)>,
+    chest: Option<(Armor, Jewels)>,
+    arm: Option<(Armor, Jewels)>,
+    waist: Option<(Armor, Jewels)>,
+    leg: Option<(Armor, Jewels)>,
+}
+
+fn optionify_slice_and_add_none<T>(slice: &[T]) -> Vec<Option<&T>> {
+    slice
+        .iter()
+        .map(Some)
+        .chain(iter::once(None::<&T>))
+        .collect()
+}
+
+fn brute_force_search_builds(
+    wishes: &[(Skill, u8)],
+    helmets: &[Armor],
+    chests: &[Armor],
+    arms: &[Armor],
+    waists: &[Armor],
+    legs: &[Armor],
+) {
+    let helmets = optionify_slice_and_add_none(helmets);
+    let chests = optionify_slice_and_add_none(chests);
+    let arms = optionify_slice_and_add_none(arms);
+    let waists = optionify_slice_and_add_none(waists);
+    let legs = optionify_slice_and_add_none(legs);
+    for &helmet in &helmets {
+        for &chest in &chests {
+            for &arm in &arms {
+                for &waist in &waists {
+                    for &leg in &legs {
+                        let mut wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
+                        for &option in &[helmet, chest, arm, waist, leg] {
+                            if let Some(armor) = option {
+                                for &(skill, amount) in &armor.skills {
+                                    for (w_skill, w_amount) in wishes.iter_mut() {
+                                        if skill == *w_skill {
+                                            if amount > *w_amount {
+                                                *w_amount = 0;
+                                            } else {
+                                                *w_amount -= amount;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
+                            print!("Gagné: ");
+                            for &option in &[helmet, chest, arm, waist, leg] {
+                                if let Some(armor) = option {
+                                    print!("{:?} ", armor.name);
+                                } else {
+                                    print!("None ");
+                                }
+                            }
+                            println!("");
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 fn main() {
     let waists: Vec<Armor> = get_armor_list(WAISTS_PATH);
@@ -22,20 +95,26 @@ fn main() {
     dbg!(legs.len());
     dbg!(chests.len());
 
-    let wishes = &[
-        (Skill::Earplugs, 1),
-        (Skill::CriticalBoost, 1),
-    ];
+    let wishes = &[(Skill::Earplugs, 5), (Skill::CriticalBoost, 2)];
     println!("helmets: ");
-    search(wishes, &helmets);
+    search_best_candidates(wishes, &helmets);
     println!("chests: ");
-    search(wishes, &chests);
+    search_best_candidates(wishes, &chests);
     println!("arms: ");
-    search(wishes, &arms);
+    search_best_candidates(wishes, &arms);
     println!("waists: ");
-    search(wishes, &waists);
+    search_best_candidates(wishes, &waists);
     println!("legs: ");
-    search(wishes, &legs);
+    search_best_candidates(wishes, &legs);
+
+    brute_force_search_builds(
+        wishes,
+        &search_best_candidates(wishes, &helmets),
+        &search_best_candidates(wishes, &chests),
+        &search_best_candidates(wishes, &arms),
+        &search_best_candidates(wishes, &waists),
+        &search_best_candidates(wishes, &legs),
+    );
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -134,7 +213,7 @@ Cette phase ne compare pas l'utilité des skills prioritaires
 /**
 PISTE: l'égalité n'est pas transitive c'est la galewe
 */
-fn search(wishes: &[(Skill, u8)], armors: &[Armor]) {
+fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor]) -> Vec<Armor> {
     let armors: Vec<&Armor> = armors
         .iter()
         .filter(|armor| {
@@ -160,10 +239,10 @@ fn search(wishes: &[(Skill, u8)], armors: &[Armor]) {
         .collect();
 
     let mut armors_copy = Vec::with_capacity(armors.len());
-    for w in &armors {
+    for &w in &armors {
         armors_copy.push(w.clone());
     }
-    armors_copy.retain(|&a| {
+    armors_copy.retain(|a| {
         for &b in &armors {
             if compare_armors(wishes, a, b) == OddComparison::Worse {
                 // println!("{} worse than {}", a.name, b.name);
@@ -172,9 +251,13 @@ fn search(wishes: &[(Skill, u8)], armors: &[Armor]) {
         }
         true
     });
-    for w in armors_copy {
+
+    for w in &armors_copy {
         dbg!(&w.name);
     }
+    println!("");
+
+    armors_copy
 }
 
 fn generate_virtual_slots(wishes: &[(Skill, u8)], skills: &[(Skill, u8)]) -> (bool, Vec<u8>) {
