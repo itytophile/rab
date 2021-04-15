@@ -68,6 +68,7 @@ fn brute_force_search_builds(
                                 }
                             }
                         }
+                        //reverse order
                         delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
                             let jewel_size_a =
                                 SKILL_LIMIT_JEWEL_SIZE.get(skill_a).unwrap().jewel_size;
@@ -75,13 +76,13 @@ fn brute_force_search_builds(
                                 SKILL_LIMIT_JEWEL_SIZE.get(skill_b).unwrap().jewel_size;
                             match (jewel_size_a, jewel_size_b) {
                                 (None, None) => Ordering::Equal,
-                                (None, Some(_)) => Ordering::Less,
-                                (Some(_), None) => Ordering::Greater,
+                                (None, Some(_)) => Ordering::Greater,
+                                (Some(_), None) => Ordering::Less,
                                 (Some(a), Some(b)) => {
                                     if a > b {
-                                        Ordering::Greater
-                                    } else if a < b {
                                         Ordering::Less
+                                    } else if a < b {
+                                        Ordering::Greater
                                     } else {
                                         Ordering::Equal
                                     }
@@ -105,7 +106,7 @@ fn brute_force_search_builds(
                         let mut jewels_leg: Jewels = [None; 3];
                         let mut index_leg = 0;
 
-                        for (skill, amount) in delta_wishes.iter_mut() {
+                        'zebi: for (skill, amount) in delta_wishes.iter_mut() {
                             if *amount > 0 {
                                 for slot in jewel_slots_helmet.iter_mut() {
                                     if let Some(jewel_size) =
@@ -117,7 +118,7 @@ fn brute_force_search_builds(
                                             jewels_helmet[index_helmet] = Some(*skill);
                                             index_helmet += 1;
                                             if *amount == 0 {
-                                                break;
+                                                continue 'zebi;
                                             }
                                         }
                                     }
@@ -134,7 +135,7 @@ fn brute_force_search_builds(
                                             jewels_chest[index_chest] = Some(*skill);
                                             index_chest += 1;
                                             if *amount == 0 {
-                                                break;
+                                                continue 'zebi;
                                             }
                                         }
                                     }
@@ -151,7 +152,7 @@ fn brute_force_search_builds(
                                             jewels_arm[index_arm] = Some(*skill);
                                             index_arm += 1;
                                             if *amount == 0 {
-                                                break;
+                                                continue 'zebi;
                                             }
                                         }
                                     }
@@ -168,7 +169,7 @@ fn brute_force_search_builds(
                                             jewels_waist[index_waist] = Some(*skill);
                                             index_waist += 1;
                                             if *amount == 0 {
-                                                break;
+                                                continue 'zebi;
                                             }
                                         }
                                     }
@@ -185,13 +186,14 @@ fn brute_force_search_builds(
                                             jewels_leg[index_leg] = Some(*skill);
                                             index_leg += 1;
                                             if *amount == 0 {
-                                                break;
+                                                continue 'zebi;
                                             }
                                         }
                                     }
                                 }
                             }
                         }
+
                         if delta_wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
                             let build = Build {
                                 helmet: match helmet {
@@ -263,8 +265,8 @@ fn main() {
     dbg!(chests.len());
 
     let wishes = &[
-        (Skill::Earplugs, 5),
-        (Skill::CriticalBoost, 2),
+        (Skill::Earplugs, 4),
+        (Skill::CriticalBoost, 3),
         (Skill::TremorResistance, 3),
     ];
     /*
