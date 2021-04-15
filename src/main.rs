@@ -1,6 +1,6 @@
 mod armor_ron;
 use std::{
-    cmp::{max, min},
+    cmp::{min, Ordering},
     iter,
 };
 
@@ -12,8 +12,9 @@ const ARMS_PATH: &str = "arms.ron";
 const LEGS_PATH: &str = "legs.ron";
 const CHESTS_PATH: &str = "chests.ron";
 
-type Jewels = [Option<(Skill, u8)>; 3];
+type Jewels = [Option<Skill>; 3];
 
+#[derive(Debug)]
 struct Build {
     helmet: Option<(Armor, Jewels)>,
     chest: Option<(Armor, Jewels)>,
@@ -37,22 +38,25 @@ fn brute_force_search_builds(
     arms: &[Armor],
     waists: &[Armor],
     legs: &[Armor],
-) {
+) -> Vec<Build> {
     let helmets = optionify_slice_and_add_none(helmets);
     let chests = optionify_slice_and_add_none(chests);
     let arms = optionify_slice_and_add_none(arms);
     let waists = optionify_slice_and_add_none(waists);
     let legs = optionify_slice_and_add_none(legs);
+
+    let mut builds: Vec<Build> = Vec::with_capacity(500);
+
     for &helmet in &helmets {
         for &chest in &chests {
             for &arm in &arms {
                 for &waist in &waists {
                     for &leg in &legs {
-                        let mut wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
+                        let mut delta_wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
                         for &option in &[helmet, chest, arm, waist, leg] {
                             if let Some(armor) = option {
                                 for &(skill, amount) in &armor.skills {
-                                    for (w_skill, w_amount) in wishes.iter_mut() {
+                                    for (w_skill, w_amount) in delta_wishes.iter_mut() {
                                         if skill == *w_skill {
                                             if amount > *w_amount {
                                                 *w_amount = 0;
@@ -64,7 +68,154 @@ fn brute_force_search_builds(
                                 }
                             }
                         }
-                        if wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
+                        delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
+                            let jewel_size_a =
+                                SKILL_LIMIT_JEWEL_SIZE.get(skill_a).unwrap().jewel_size;
+                            let jewel_size_b =
+                                SKILL_LIMIT_JEWEL_SIZE.get(skill_b).unwrap().jewel_size;
+                            match (jewel_size_a, jewel_size_b) {
+                                (None, None) => Ordering::Equal,
+                                (None, Some(_)) => Ordering::Less,
+                                (Some(_), None) => Ordering::Greater,
+                                (Some(a), Some(b)) => {
+                                    if a > b {
+                                        Ordering::Greater
+                                    } else if a < b {
+                                        Ordering::Less
+                                    } else {
+                                        Ordering::Equal
+                                    }
+                                }
+                            }
+                        });
+                        let mut jewel_slots_helmet = extract_slots_copy(helmet);
+                        let mut jewel_slots_chest = extract_slots_copy(chest);
+                        let mut jewel_slots_arm = extract_slots_copy(arm);
+                        let mut jewel_slots_waist = extract_slots_copy(waist);
+                        let mut jewel_slots_leg = extract_slots_copy(leg);
+
+                        let mut jewels_helmet: Jewels = [None; 3];
+                        let mut index_helmet = 0;
+                        let mut jewels_chest: Jewels = [None; 3];
+                        let mut index_chest = 0;
+                        let mut jewels_arm: Jewels = [None; 3];
+                        let mut index_arm = 0;
+                        let mut jewels_waist: Jewels = [None; 3];
+                        let mut index_waist = 0;
+                        let mut jewels_leg: Jewels = [None; 3];
+                        let mut index_leg = 0;
+
+                        for (skill, amount) in delta_wishes.iter_mut() {
+                            if *amount > 0 {
+                                for slot in jewel_slots_helmet.iter_mut() {
+                                    if let Some(jewel_size) =
+                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                    {
+                                        if *slot >= jewel_size {
+                                            *slot = 0;
+                                            *amount -= 1;
+                                            jewels_helmet[index_helmet] = Some(*skill);
+                                            index_helmet += 1;
+                                            if *amount == 0 {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if *amount > 0 {
+                                for slot in jewel_slots_chest.iter_mut() {
+                                    if let Some(jewel_size) =
+                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                    {
+                                        if *slot >= jewel_size {
+                                            *slot = 0;
+                                            *amount -= 1;
+                                            jewels_chest[index_chest] = Some(*skill);
+                                            index_chest += 1;
+                                            if *amount == 0 {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if *amount > 0 {
+                                for slot in jewel_slots_arm.iter_mut() {
+                                    if let Some(jewel_size) =
+                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                    {
+                                        if *slot >= jewel_size {
+                                            *slot = 0;
+                                            *amount -= 1;
+                                            jewels_arm[index_arm] = Some(*skill);
+                                            index_arm += 1;
+                                            if *amount == 0 {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if *amount > 0 {
+                                for slot in jewel_slots_waist.iter_mut() {
+                                    if let Some(jewel_size) =
+                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                    {
+                                        if *slot >= jewel_size {
+                                            *slot = 0;
+                                            *amount -= 1;
+                                            jewels_waist[index_waist] = Some(*skill);
+                                            index_waist += 1;
+                                            if *amount == 0 {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if *amount > 0 {
+                                for slot in jewel_slots_leg.iter_mut() {
+                                    if let Some(jewel_size) =
+                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                    {
+                                        if *slot >= jewel_size {
+                                            *slot = 0;
+                                            *amount -= 1;
+                                            jewels_leg[index_leg] = Some(*skill);
+                                            index_leg += 1;
+                                            if *amount == 0 {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if delta_wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
+                            let build = Build {
+                                helmet: match helmet {
+                                    None => None,
+                                    Some(armor) => Some((armor.clone(), jewels_helmet)),
+                                },
+                                chest: match chest {
+                                    None => None,
+                                    Some(armor) => Some((armor.clone(), jewels_chest)),
+                                },
+                                arm: match arm {
+                                    None => None,
+                                    Some(armor) => Some((armor.clone(), jewels_arm)),
+                                },
+                                waist: match waist {
+                                    None => None,
+                                    Some(armor) => Some((armor.clone(), jewels_waist)),
+                                },
+                                leg: match leg {
+                                    None => None,
+                                    Some(armor) => Some((armor.clone(), jewels_leg)),
+                                },
+                            };
+                            /*
                             print!("Gagné: ");
                             for &option in &[helmet, chest, arm, waist, leg] {
                                 if let Some(armor) = option {
@@ -74,11 +225,27 @@ fn brute_force_search_builds(
                                 }
                             }
                             println!("");
+                            */
+                            builds.push(build);
                         }
                     }
                 }
             }
         }
+    }
+    builds
+}
+
+fn extract_slots_copy(helmet: Option<&Armor>) -> [u8; 3] {
+    match helmet {
+        Some(armor) => {
+            let mut slots = [0; 3];
+            for (key, &slot) in armor.slots.iter().enumerate() {
+                slots[key] = slot;
+            }
+            slots
+        }
+        None => [0; 3],
     }
 }
 
@@ -95,7 +262,12 @@ fn main() {
     dbg!(legs.len());
     dbg!(chests.len());
 
-    let wishes = &[(Skill::Earplugs, 5), (Skill::CriticalBoost, 2)];
+    let wishes = &[
+        (Skill::Earplugs, 5),
+        (Skill::CriticalBoost, 2),
+        (Skill::TremorResistance, 3),
+    ];
+    /*
     println!("helmets: ");
     search_best_candidates(wishes, &helmets);
     println!("chests: ");
@@ -106,8 +278,9 @@ fn main() {
     search_best_candidates(wishes, &waists);
     println!("legs: ");
     search_best_candidates(wishes, &legs);
+    */
 
-    brute_force_search_builds(
+    let builds = brute_force_search_builds(
         wishes,
         &search_best_candidates(wishes, &helmets),
         &search_best_candidates(wishes, &chests),
@@ -115,6 +288,24 @@ fn main() {
         &search_best_candidates(wishes, &waists),
         &search_best_candidates(wishes, &legs),
     );
+
+    for build in &builds {
+        println!(
+            "{}\n{}\n{}\n{}\n{}\n",
+            debug_build_part(&build.helmet),
+            debug_build_part(&build.chest),
+            debug_build_part(&build.arm),
+            debug_build_part(&build.waist),
+            debug_build_part(&build.leg)
+        )
+    }
+}
+
+fn debug_build_part(part: &Option<(Armor, Jewels)>) -> String {
+    match part {
+        None => "None".to_string(),
+        Some((armor, jewels)) => format!("{}:{:?}", armor.name, jewels),
+    }
 }
 
 #[derive(Eq, PartialEq, Debug)]
