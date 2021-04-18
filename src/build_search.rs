@@ -244,14 +244,14 @@ fn extract_slots_copy(helmet: Option<&Armor>) -> [u8; 3] {
     }
 }
 
-pub fn pre_selection_then_brute_force_search(wishes: &[(Skill, u8)], helmets: Vec<Armor>, chests: Vec<Armor>, arms: Vec<Armor>, waists: Vec<Armor>, legs: Vec<Armor>) -> Vec<Build> {
+pub fn pre_selection_then_brute_force_search(wishes: &[(Skill, u8)], helmets: &[Armor], chests: &[Armor], arms: &[Armor], waists: &[Armor], legs: &[Armor]) -> Vec<Build> {
     brute_force_search_builds(
         wishes,
-        &search_best_candidates(wishes, &helmets),
-        &search_best_candidates(wishes, &chests),
-        &search_best_candidates(wishes, &arms),
-        &search_best_candidates(wishes, &waists),
-        &search_best_candidates(wishes, &legs),
+        &search_best_candidates(wishes, helmets),
+        &search_best_candidates(wishes, chests),
+        &search_best_candidates(wishes, arms),
+        &search_best_candidates(wishes, waists),
+        &search_best_candidates(wishes, legs),
     )
 }
 

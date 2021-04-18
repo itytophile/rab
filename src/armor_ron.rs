@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use ron::de::from_reader;
 use serde::Deserialize;
-use std::{collections::HashMap, fs::File};
+use std::{collections::HashMap, fmt::Display, fs::File};
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum Gender {
@@ -138,10 +138,128 @@ pub enum Skill {
     HornMaestro,
 }
 
+use Skill::*;
+
+impl Default for Skill {
+    fn default() -> Self {
+        Botanist
+    }
+}
+
+impl Display for Skill {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Skill {
+    pub const ALL: [Skill; 100] = [
+        Botanist,
+        DefenseBoost,
+        ItemProlonger,
+        CriticalEye,
+        Fortify,
+        PoisonAttack,
+        RecoilDown,
+        QuickSheath,
+        FireAttack,
+        IceAttack,
+        WaterAttack,
+        ProtectivePolish,
+        StaminaThief,
+        Partbreaker,
+        Mushroomancer,
+        MaximumMight,
+        MarathonRunner,
+        PeakPerformance,
+        AttackBoost,
+        OffensiveGuard,
+        Focus,
+        RecoveryUp,
+        NormalRapidUp,
+        SpeedEating,
+        Windproof,
+        Bludgeoner,
+        AffinitySliding,
+        WideRange,
+        StunResistance,
+        LoadShells,
+        ParalysisAttack,
+        PierceUp,
+        AimBooster,
+        SleepAttack,
+        BlightResistance,
+        CriticalDraw,
+        JumpMaster,
+        Constitution,
+        FreeMeal,
+        GoodLuck,
+        RazorSharp,
+        SpareShot,
+        WirebugWhisperer,
+        Resentment,
+        Handicraft,
+        FlinchFree,
+        RapidMorph,
+        LatentPower,
+        WeaknessExploit,
+        Resuscitate,
+        EvadeWindow,
+        Slugger,
+        SpecialAmmoBoost,
+        Agitator,
+        DevineBlessing,
+        Geologist,
+        HungerResistance,
+        CriticalElement,
+        EvadeExtender,
+        DragonAttack,
+        Heroics,
+        SleepResistance,
+        ParalysisResistance,
+        PoisonResistance,
+        WindAlignment,
+        SpreadUp,
+        ReloadSpeed,
+        ThunderAlignment,
+        Guard,
+        StaminaSurge,
+        Earplugs,
+        BowChargePlus,
+        BlastResistance,
+        AmmoUp,
+        LeapofFaith,
+        DragonResistance,
+        WaterResistance,
+        DivineBlessing,
+        RecoverySpeed,
+        SpeedSharpening,
+        MuckResistance,
+        PowerProlonger,
+        TremorResistance,
+        HellfireCloak,
+        BubblyDance,
+        PunishingDraw,
+        WallRunner,
+        GuardUp,
+        CriticalBoost,
+        MindsEye,
+        BlastAttack,
+        MasterMounter,
+        Counterstrike,
+        ThunderAttack,
+        Artillery,
+        Bombardier,
+        CaptureMaster,
+        Diversion,
+        FireResistance,
+        HornMaestro,
+    ];
+}
+
 lazy_static! {
     pub static ref SKILL_LIMIT_JEWEL_SIZE: HashMap<Skill, SkillDesc> = {
         let mut m = HashMap::new();
-        use Skill::*;
         m.insert(
             Botanist,
             SkillDesc {
