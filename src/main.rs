@@ -2,7 +2,7 @@ mod armor_ron;
 mod build_search;
 
 use armor_ron::{get_armor_list, Armor, Skill, SKILL_LIMIT_JEWEL_SIZE};
-use build_search::Jewels;
+use build_search::{Build, Jewels};
 use iced::{
     button, pick_list, scrollable, slider, Align, Button, Column, Container, Element, Length,
     PickList, Row, Rule, Sandbox, Scrollable, Settings, Slider, Text,
@@ -35,6 +35,7 @@ impl Default for WishField {
 #[derive(Default)]
 struct Example {
     scroll: scrollable::State,
+    state_builds_scroll: scrollable::State,
     wish_fields: Vec<WishField>,
     state_add_wish_button: button::State,
     state_search_button: button::State,
@@ -44,6 +45,15 @@ struct Example {
     arms: Vec<Armor>,
     waists: Vec<Armor>,
     legs: Vec<Armor>,
+
+    builds: Vec<Build>,
+    states_build_button: Vec<(
+        button::State,
+        button::State,
+        button::State,
+        button::State,
+        button::State,
+    )>,
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +107,7 @@ impl Sandbox for Example {
                     .iter()
                     .map(|wish| (wish.selected, wish.value_slider))
                     .collect();
-                let builds = build_search::pre_selection_then_brute_force_search(
+                self.builds = build_search::pre_selection_then_brute_force_search(
                     &wishes,
                     &self.helmets,
                     &self.chests,
@@ -105,33 +115,16 @@ impl Sandbox for Example {
                     &self.waists,
                     &self.legs,
                 );
-                for build in &builds {
-                    println!(
-                        "{}\n{}\n{}\n{}\n{}\n",
-                        debug_build_part(&build.helmet),
-                        debug_build_part(&build.chest),
-                        debug_build_part(&build.arm),
-                        debug_build_part(&build.waist),
-                        debug_build_part(&build.leg)
-                    )
-                }
+                self.states_build_button = vec![Default::default(); self.builds.len()];
             }
         }
     }
 
     fn view(&mut self) -> Element<Message> {
-        let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
-            .on_press(Message::AddWish);
-        let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
-            .on_press(Message::Search);
-        let buttons = Row::new()
+        let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
+            .padding(20)
             .spacing(10)
-            .push(add_wish_button)
-            .push(search_button);
-        let mut column = Column::new()
-            .spacing(10)
-            .align_items(Align::Center)
-            .push(buttons);
+            .align_items(Align::Center);
 
         let size = self.wish_fields.len();
 
@@ -160,18 +153,87 @@ impl Sandbox for Example {
             .width(Length::Units(100));
             let text = Text::new(format!("{}", wish_field.value_slider));
             row = row.push(slider).push(text).push(remove_button);
-            column = column.push(row);
+            scrollable_wishes = scrollable_wishes.push(row);
         }
 
-        let row = Row::new().spacing(10).push(column);
+        let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
+            .align_items(Align::Center)
+            .spacing(10);
+        let size = self.builds.len();
+        for ((key, build), state_button) in self
+            .builds
+            .iter()
+            .enumerate()
+            .zip(self.states_build_button.iter_mut())
+        {
+            let lol = |option: &Option<(Armor, [Option<Skill>; 3])>| {
+                Text::new(if let Some((armor, _)) = option {
+                    &armor.name
+                } else {
+                    "None"
+                })
+            };
+            let row_build = Row::new()
+                .spacing(10)
+                .push(
+                    Button::new(&mut state_button.0, lol(&build.helmet))
+                        .width(Length::Fill)
+                        .height(Length::Units(60)),
+                )
+                .push(
+                    Button::new(&mut state_button.1, lol(&build.chest))
+                        .width(Length::Fill)
+                        .height(Length::Units(60)),
+                )
+                .push(
+                    Button::new(&mut state_button.2, lol(&build.arm))
+                        .width(Length::Fill)
+                        .height(Length::Units(60)),
+                )
+                .push(
+                    Button::new(&mut state_button.3, lol(&build.waist))
+                        .width(Length::Fill)
+                        .height(Length::Units(60)),
+                )
+                .push(
+                    Button::new(&mut state_button.4, lol(&build.leg))
+                        .width(Length::Fill)
+                        .height(Length::Units(60)),
+                );
+            builds_scrolls = builds_scrolls.push(row_build);
+            if key < size - 1 {
+                builds_scrolls = builds_scrolls.push(Rule::horizontal(1))
+            }
+        }
+        let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
+            .on_press(Message::AddWish);
+        let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
+            .on_press(Message::Search);
+        let buttons = Row::new()
+            .spacing(10)
+            .push(add_wish_button)
+            .push(search_button);
+        let column_right = Column::new()
+            .spacing(10)
+            .push(buttons)
+            .push(scrollable_wishes)
+            .align_items(Align::Center);
 
-        let content = Scrollable::new(&mut self.scroll)
+        let row = Row::new()
+            .spacing(10)
+            .push(column_right)
+            .push(builds_scrolls)
+            .height(Length::Fill);
+
+        let content = Column::new()
             .width(Length::Fill)
             .align_items(Align::Center)
             .spacing(10)
-            .push(row);
+            .push(row)
+            .push(Text::new("lol").height(Length::Fill));
 
         Container::new(content)
+            .padding(30)
             .width(Length::Fill)
             .center_x()
             .into()
