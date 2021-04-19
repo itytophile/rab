@@ -2,7 +2,7 @@ mod armor_ron;
 mod build_search;
 
 use armor_ron::{get_armor_list, Armor, Skill, SKILL_LIMIT_JEWEL_SIZE};
-use build_search::{Build, Jewels};
+use build_search::Build;
 use iced::{
     button, pick_list, scrollable, slider, Align, Button, Column, Container, Element, Length,
     PickList, Row, Rule, Sandbox, Scrollable, Settings, Slider, Text,
@@ -54,6 +54,8 @@ struct Example {
         button::State,
         button::State,
     )>,
+
+    armor_desc: Option<(Armor, [Option<Skill>; 3])>,
 }
 
 #[derive(Debug, Clone)]
@@ -63,6 +65,7 @@ enum Message {
     RemoveWish(usize),
     SliderChanged(usize, u8),
     Search,
+    ArmorDesc(Option<(Armor, [Option<Skill>; 3])>),
 }
 
 const WAISTS_PATH: &str = "waists.ron";
@@ -82,6 +85,7 @@ impl Sandbox for Example {
             arms: get_armor_list(ARMS_PATH),
             legs: get_armor_list(LEGS_PATH),
             chests: get_armor_list(CHESTS_PATH),
+
             ..Self::default()
         }
     }
@@ -117,6 +121,7 @@ impl Sandbox for Example {
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
+            Message::ArmorDesc(option) => self.armor_desc = option,
         }
     }
 
@@ -137,7 +142,8 @@ impl Sandbox for Example {
             );
             let mut row = Row::new().spacing(10).push(pick_list);
             let mut remove_button =
-                Button::new(&mut wish_field.state_remove_button, Text::new("Remove"));
+                Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
+                    .style(style::Button::Remove);
             if size > 1 {
                 remove_button = remove_button.on_press(Message::RemoveWish(key));
             }
@@ -157,57 +163,38 @@ impl Sandbox for Example {
         }
 
         let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
+            .width(Length::Fill)
             .align_items(Align::Center)
-            .spacing(10);
+            .spacing(10)
+            .padding(20);
         let size = self.builds.len();
-        for ((key, build), state_button) in self
-            .builds
-            .iter()
-            .enumerate()
-            .zip(self.states_build_button.iter_mut())
-        {
-            let lol = |option: &Option<(Armor, [Option<Skill>; 3])>| {
-                Text::new(if let Some((armor, _)) = option {
-                    &armor.name
-                } else {
-                    "None"
-                })
-            };
-            let row_build = Row::new()
-                .spacing(10)
-                .push(
-                    Button::new(&mut state_button.0, lol(&build.helmet))
-                        .width(Length::Fill)
-                        .height(Length::Units(60)),
-                )
-                .push(
-                    Button::new(&mut state_button.1, lol(&build.chest))
-                        .width(Length::Fill)
-                        .height(Length::Units(60)),
-                )
-                .push(
-                    Button::new(&mut state_button.2, lol(&build.arm))
-                        .width(Length::Fill)
-                        .height(Length::Units(60)),
-                )
-                .push(
-                    Button::new(&mut state_button.3, lol(&build.waist))
-                        .width(Length::Fill)
-                        .height(Length::Units(60)),
-                )
-                .push(
-                    Button::new(&mut state_button.4, lol(&build.leg))
-                        .width(Length::Fill)
-                        .height(Length::Units(60)),
-                );
-            builds_scrolls = builds_scrolls.push(row_build);
-            if key < size - 1 {
-                builds_scrolls = builds_scrolls.push(Rule::horizontal(1))
+        if size == 0 {
+            builds_scrolls = builds_scrolls.push(Text::new("No Result"));
+        } else {
+            for ((key, build), state_button) in self
+                .builds
+                .iter()
+                .enumerate()
+                .zip(self.states_build_button.iter_mut())
+            {
+                let row_build = Row::new()
+                    .spacing(10)
+                    .push(build_part_to_button(&mut state_button.0, &build.helmet))
+                    .push(build_part_to_button(&mut state_button.1, &build.chest))
+                    .push(build_part_to_button(&mut state_button.2, &build.arm))
+                    .push(build_part_to_button(&mut state_button.3, &build.waist))
+                    .push(build_part_to_button(&mut state_button.4, &build.leg));
+                builds_scrolls = builds_scrolls.push(row_build);
+                if key < size - 1 {
+                    builds_scrolls = builds_scrolls.push(Rule::horizontal(1))
+                }
             }
         }
         let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
+            .style(style::Button::Add)
             .on_press(Message::AddWish);
         let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
+            .style(style::Button::Search)
             .on_press(Message::Search);
         let buttons = Row::new()
             .spacing(10)
@@ -219,24 +206,160 @@ impl Sandbox for Example {
             .push(scrollable_wishes)
             .align_items(Align::Center);
 
-        let row = Row::new()
-            .spacing(10)
-            .push(column_right)
-            .push(builds_scrolls)
-            .height(Length::Fill);
+        let row = Row::new().push(column_right).push(builds_scrolls);
 
         let content = Column::new()
             .width(Length::Fill)
             .align_items(Align::Center)
             .spacing(10)
-            .push(row)
-            .push(Text::new("lol").height(Length::Fill));
+            .push(row.height(Length::Fill))
+            .push(
+                armor_desc_to_element(&self.armor_desc)
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+            );
 
         Container::new(content)
             .padding(30)
             .width(Length::Fill)
             .center_x()
             .into()
+    }
+}
+
+fn build_part_to_button<'a>(
+    state: &'a mut button::State,
+    build_part: &Option<(Armor, [Option<Skill>; 3])>,
+) -> Button<'a, Message> {
+    let button = Button::new(
+        state,
+        Container::new(Text::new(if let Some((armor, _)) = build_part {
+            &armor.name
+        } else {
+            "Free"
+        }))
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x()
+        .center_y(),
+    )
+    .style(style::Button::Result)
+    .width(Length::Fill)
+    .height(Length::Units(60));
+    if build_part.is_none() {
+        button
+    } else {
+        button.on_press(Message::ArmorDesc(build_part.clone()))
+    }
+}
+
+fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Row<Message> {
+    if let Some((armor, skills)) = armor {
+        let mut col_armor_stats = Column::new()
+            .push(Text::new(&armor.name))
+            .push(Text::new(&armor.defense.to_string()))
+            .push(Text::new(&armor.fire.to_string()))
+            .push(Text::new(&armor.water.to_string()))
+            .push(Text::new(&armor.thunder.to_string()))
+            .push(Text::new(&armor.ice.to_string()))
+            .push(Text::new(&armor.dragon.to_string()));
+        for (skill, amount) in armor.skills.iter() {
+            col_armor_stats = col_armor_stats.push(Text::new(format!("{} x{}", skill, amount)))
+        }
+        let mut col_skills = Column::new();
+        for skill in skills {
+            col_skills = if let Some(skill) = skill {
+                col_skills.push(Text::new(skill.to_string()).height(Length::Fill))
+            } else {
+                col_skills.push(Text::new("None").height(Length::Fill))
+            }
+        }
+        Row::new()
+            .push(col_armor_stats.width(Length::Fill))
+            .push(col_skills.width(Length::Fill))
+    } else {
+        Row::new().push(Text::new("None"))
+    }
+}
+
+mod style {
+    use iced::{button, Background, Color, Vector};
+
+    pub enum Button {
+        Filter { selected: bool },
+        Icon,
+        Remove,
+        Add,
+        Search,
+        Result,
+    }
+
+    impl button::StyleSheet for Button {
+        fn active(&self) -> button::Style {
+            match self {
+                Button::Filter { selected } => {
+                    if *selected {
+                        button::Style {
+                            background: Some(Background::Color(Color::from_rgb(0.2, 0.2, 0.7))),
+                            border_radius: 10.0,
+                            text_color: Color::WHITE,
+                            ..button::Style::default()
+                        }
+                    } else {
+                        button::Style::default()
+                    }
+                }
+                Button::Icon => button::Style {
+                    text_color: Color::from_rgb(0.5, 0.5, 0.5),
+                    ..button::Style::default()
+                },
+                Button::Remove => button::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.95, 0.27, 0.41))),
+                    border_radius: 5.0,
+                    text_color: Color::WHITE,
+                    ..button::Style::default()
+                },
+                Button::Add => button::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.28, 0.78, 0.56))),
+                    border_radius: 5.0,
+                    text_color: Color::WHITE,
+                    ..button::Style::default()
+                },
+                Button::Search => button::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.28, 0.37, 0.78))),
+                    border_radius: 5.0,
+                    text_color: Color::WHITE,
+                    ..button::Style::default()
+                },
+                Button::Result => button::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.94, 0.96, 0.98))),
+                    border_radius: 5.0,
+                    text_color: Color::from_rgb(0.16, 0.44, 0.66),
+                    ..button::Style::default()
+                },
+            }
+        }
+
+        fn hovered(&self) -> button::Style {
+            let active = self.active();
+
+            button::Style {
+                text_color: match self {
+                    Button::Icon => Color::from_rgb(0.2, 0.2, 0.7),
+                    Button::Filter { selected } if !selected => Color::from_rgb(0.2, 0.2, 0.7),
+                    _ => active.text_color,
+                },
+                background: match self {
+                    Button::Result => Some(Background::Color(Color::from_rgb(0.89, 0.94, 0.98))),
+                    _ => active.background,
+                },
+                shadow_offset: match self {
+                    Button::Result => active.shadow_offset,
+                    _ => active.shadow_offset + Vector::new(0.0, 1.0),
+                },
+                ..active
+            }
+        }
     }
 }
 
@@ -288,9 +411,3 @@ fn main() {
 
 
 */
-fn debug_build_part(part: &Option<(Armor, Jewels)>) -> String {
-    match part {
-        None => "None".to_string(),
-        Some((armor, jewels)) => format!("{}:{:?}", armor.name, jewels),
-    }
-}
