@@ -255,14 +255,32 @@ fn build_part_to_button<'a>(
 
 fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Row<Message> {
     if let Some((armor, skills)) = armor {
-        let mut col_armor_stats = Column::new()
-            .push(Text::new(&armor.name))
-            .push(Text::new(&armor.defense.to_string()))
-            .push(Text::new(&armor.fire.to_string()))
-            .push(Text::new(&armor.water.to_string()))
-            .push(Text::new(&armor.thunder.to_string()))
-            .push(Text::new(&armor.ice.to_string()))
-            .push(Text::new(&armor.dragon.to_string()));
+        let mut col_armor_stats = Column::new().spacing(5);
+        for (style, name, value) in std::array::IntoIter::new([
+            (style::Container::Defense, "Defense", armor.defense as i8),
+            (style::Container::Fire, "Fire", armor.fire),
+            (style::Container::Water, "Water", armor.water),
+            (style::Container::Thunder, "Thunder", armor.thunder),
+            (style::Container::Ice, "Ice", armor.ice),
+            (style::Container::Dragon, "Dragon", armor.dragon),
+        ]) {
+            col_armor_stats = col_armor_stats.push(
+                Row::new()
+                    .spacing(10)
+                    .push(
+                        Container::new(Text::new(name))
+                            .width(Length::Units(70))
+                            .center_x()
+                            .style(style),
+                    )
+                    .push(
+                        Text::new(value.to_string())
+                            .width(Length::Units(30))
+                            .horizontal_alignment(iced::HorizontalAlignment::Right),
+                    ),
+            )
+        }
+
         for (skill, amount) in armor.skills.iter() {
             col_armor_stats = col_armor_stats.push(Text::new(format!("{} x{}", skill, amount)))
         }
@@ -283,11 +301,60 @@ fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Row<Mes
 }
 
 mod style {
-    use iced::{button, Background, Color, Vector};
+    use iced::{button, container, Background, Color, Vector};
+
+    pub enum Container {
+        Fire,
+        Thunder,
+        Ice,
+        Water,
+        Dragon,
+        Defense,
+    }
+
+    impl container::StyleSheet for Container {
+        fn style(&self) -> container::Style {
+            match self {
+                Container::Fire => container::Style {
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.64, 0.34, 0.37))),
+                    border_radius: 10.0,
+                    ..container::Style::default()
+                },
+                Container::Thunder => container::Style {
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.71, 0.67, 0.41))),
+                    border_radius: 10.0,
+                    ..container::Style::default()
+                },
+                Container::Ice => container::Style {
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.49, 0.67, 0.67))),
+                    border_radius: 10.0,
+                    ..container::Style::default()
+                },
+                Container::Water => container::Style {
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.45, 0.57, 0.67))),
+                    border_radius: 10.0,
+                    ..container::Style::default()
+                },
+                Container::Dragon => container::Style {
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.53, 0.50, 0.62))),
+                    border_radius: 10.0,
+                    ..container::Style::default()
+                },
+                Container::Defense => container::Style {
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.7, 0.7, 0.7))),
+                    ..container::Style::default()
+                },
+            }
+        }
+    }
 
     pub enum Button {
-        Filter { selected: bool },
-        Icon,
         Remove,
         Add,
         Search,
@@ -297,22 +364,6 @@ mod style {
     impl button::StyleSheet for Button {
         fn active(&self) -> button::Style {
             match self {
-                Button::Filter { selected } => {
-                    if *selected {
-                        button::Style {
-                            background: Some(Background::Color(Color::from_rgb(0.2, 0.2, 0.7))),
-                            border_radius: 10.0,
-                            text_color: Color::WHITE,
-                            ..button::Style::default()
-                        }
-                    } else {
-                        button::Style::default()
-                    }
-                }
-                Button::Icon => button::Style {
-                    text_color: Color::from_rgb(0.5, 0.5, 0.5),
-                    ..button::Style::default()
-                },
                 Button::Remove => button::Style {
                     background: Some(Background::Color(Color::from_rgb(0.95, 0.27, 0.41))),
                     border_radius: 5.0,
@@ -344,11 +395,6 @@ mod style {
             let active = self.active();
 
             button::Style {
-                text_color: match self {
-                    Button::Icon => Color::from_rgb(0.2, 0.2, 0.7),
-                    Button::Filter { selected } if !selected => Color::from_rgb(0.2, 0.2, 0.7),
-                    _ => active.text_color,
-                },
                 background: match self {
                     Button::Result => Some(Background::Color(Color::from_rgb(0.89, 0.94, 0.98))),
                     _ => active.background,
