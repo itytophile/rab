@@ -5,7 +5,7 @@ use armor_ron::{get_armor_list, Armor, Skill, SKILL_LIMIT_JEWEL_SIZE};
 use build_search::Build;
 use iced::{
     button, pick_list, scrollable, slider, Align, Button, Column, Container, Element, Length,
-    PickList, Row, Rule, Sandbox, Scrollable, Settings, Slider, Text,
+    PickList, Row, Rule, Sandbox, Scrollable, Settings, Slider, Space, Text,
 };
 
 pub fn main() -> iced::Result {
@@ -163,7 +163,6 @@ impl Sandbox for Example {
         }
 
         let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
-            .width(Length::Fill)
             .align_items(Align::Center)
             .spacing(10)
             .padding(20);
@@ -200,29 +199,31 @@ impl Sandbox for Example {
             .spacing(10)
             .push(add_wish_button)
             .push(search_button);
-        let column_right = Column::new()
+        let column_left = Column::new()
             .spacing(10)
             .push(buttons)
-            .push(scrollable_wishes)
+            .push(scrollable_wishes.height(Length::FillPortion(2)))
+            .push(armor_desc_to_element(&self.armor_desc).height(Length::FillPortion(3)))
             .align_items(Align::Center);
 
-        let row = Row::new().push(column_right).push(builds_scrolls);
+        let mut col_titles = Row::new();
 
-        let content = Column::new()
-            .width(Length::Fill)
-            .align_items(Align::Center)
-            .spacing(10)
-            .push(row.height(Length::Fill))
-            .push(
-                armor_desc_to_element(&self.armor_desc)
-                    .height(Length::Fill)
-                    .width(Length::Fill),
+        for col_name in std::array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg"]) {
+            col_titles = col_titles.push(
+                Text::new(col_name)
+                    .width(Length::Fill)
+                    .horizontal_alignment(iced::HorizontalAlignment::Center),
             );
+        }
 
-        Container::new(content)
-            .padding(30)
-            .width(Length::Fill)
-            .center_x()
+        let column_right = Column::new()
+            .push(col_titles)
+            .push(builds_scrolls.width(Length::Fill));
+
+        Row::new()
+            .padding(5)
+            .push(column_left)
+            .push(column_right)
             .into()
     }
 }
@@ -253,9 +254,9 @@ fn build_part_to_button<'a>(
     }
 }
 
-fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Row<Message> {
+fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Column<Message> {
     if let Some((armor, skills)) = armor {
-        let mut col_armor_stats = Column::new().spacing(5);
+        let mut col_armor_stats = Column::new().align_items(Align::Center).spacing(5);
         for (style, name, value) in std::array::IntoIter::new([
             (style::Container::Defense, "Defense", armor.defense as i8),
             (style::Container::Fire, "Fire", armor.fire),
@@ -281,22 +282,38 @@ fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Row<Mes
             )
         }
 
-        for (skill, amount) in armor.skills.iter() {
-            col_armor_stats = col_armor_stats.push(Text::new(format!("{} x{}", skill, amount)))
+        if armor.skills.len() > 0 {
+            col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
         }
-        let mut col_skills = Column::new();
+
+        for (skill, amount) in armor.skills.iter() {
+            col_armor_stats = col_armor_stats.push(
+                Container::new(Text::new(format!("{} x{}", skill, amount)))
+                    .width(Length::Units(150))
+                    .center_x()
+                    .style(style::Container::Fire),
+            )
+        }
+
+        let mut has_put_first_jewel = false;
+
         for skill in skills {
-            col_skills = if let Some(skill) = skill {
-                col_skills.push(Text::new(skill.to_string()).height(Length::Fill))
-            } else {
-                col_skills.push(Text::new("None").height(Length::Fill))
+            if let Some(skill) = skill {
+                if !has_put_first_jewel {
+                    col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
+                    has_put_first_jewel = true;
+                }
+                col_armor_stats = col_armor_stats.push(
+                    Container::new(Text::new(format!("Jewel {}", skill)))
+                        .width(Length::Units(170))
+                        .center_x()
+                        .style(style::Container::Ice),
+                )
             }
         }
-        Row::new()
-            .push(col_armor_stats.width(Length::Fill))
-            .push(col_skills.width(Length::Fill))
+        col_armor_stats
     } else {
-        Row::new().push(Text::new("None"))
+        Column::new().push(Text::new("None"))
     }
 }
 
@@ -408,52 +425,3 @@ mod style {
         }
     }
 }
-
-/*
-use armor_ron::{get_armor_list, Armor, Skill};
-use build_search::Jewels;
-
-const WAISTS_PATH: &str = "waists.ron";
-const HELMETS_PATH: &str = "helmets.ron";
-const ARMS_PATH: &str = "arms.ron";
-const LEGS_PATH: &str = "legs.ron";
-const CHESTS_PATH: &str = "chests.ron";
-
-fn main() {
-
-    let waists: Vec<Armor> = get_armor_list(WAISTS_PATH);
-    let helmets: Vec<Armor> = get_armor_list(HELMETS_PATH);
-    let arms: Vec<Armor> = get_armor_list(ARMS_PATH);
-    let legs: Vec<Armor> = get_armor_list(LEGS_PATH);
-    let chests: Vec<Armor> = get_armor_list(CHESTS_PATH);
-
-    dbg!(waists.len());
-    dbg!(helmets.len());
-    dbg!(arms.len());
-    dbg!(legs.len());
-    dbg!(chests.len());
-
-    let wishes = &[
-        (Skill::Earplugs, 4),
-        (Skill::CriticalBoost, 3),
-        (Skill::TremorResistance, 3),
-    ];
-
-    let builds = build_search::pre_selection_then_brute_force_search(wishes, helmets, chests, arms, waists, legs);
-
-    for build in &builds {
-        println!(
-            "{}\n{}\n{}\n{}\n{}\n",
-            debug_build_part(&build.helmet),
-            debug_build_part(&build.chest),
-            debug_build_part(&build.arm),
-            debug_build_part(&build.waist),
-            debug_build_part(&build.leg)
-        )
-    }
-
-}
-
-
-
-*/
