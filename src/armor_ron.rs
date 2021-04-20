@@ -1,7 +1,6 @@
-use lazy_static::lazy_static;
 use ron::de::from_reader;
 use serde::Deserialize;
-use std::{collections::HashMap, fmt::Display, fs::File};
+use std::{fmt::Display, fs::File};
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum Gender {
@@ -29,7 +28,7 @@ pub fn get_armor_list(path: &str) -> Vec<Armor> {
     from_reader(File::open(path).expect(&format!("Failed opening {}", path))).unwrap()
 }
 
-pub struct SkillDesc {
+struct SkillDesc {
     pub limit: u8,
     pub jewel_size: Option<u8>,
 }
@@ -153,6 +152,12 @@ impl Display for Skill {
 }
 
 impl Skill {
+    pub fn get_jewel_size(&self) -> Option<u8> {
+        self.get_skill_desc().jewel_size
+    }
+    pub fn get_limit(&self) -> u8 {
+        self.get_skill_desc().limit
+    }
     pub const ALL: [Skill; 100] = [
         Botanist,
         DefenseBoost,
@@ -255,711 +260,507 @@ impl Skill {
         FireResistance,
         HornMaestro,
     ];
-}
+    fn get_skill_desc(&self) -> SkillDesc {
+        match self {
+            Botanist => SkillDesc {
+                limit: 4,
+                jewel_size: Some(1),
+            },
 
-lazy_static! {
-    pub static ref SKILL_LIMIT_JEWEL_SIZE: HashMap<Skill, SkillDesc> = {
-        let mut m = HashMap::new();
-        m.insert(
-            Botanist,
-            SkillDesc {
-                limit: 4,
-                jewel_size: Some(1),
-            },
-        );
-        m.insert(
-            DefenseBoost,
-            SkillDesc {
+            DefenseBoost => SkillDesc {
                 limit: 7,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            ItemProlonger,
-            SkillDesc {
+
+            ItemProlonger => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            CriticalEye,
-            SkillDesc {
+
+            CriticalEye => SkillDesc {
                 limit: 7,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Fortify,
-            SkillDesc {
+
+            Fortify => SkillDesc {
                 limit: 1,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            PoisonAttack,
-            SkillDesc {
+
+            PoisonAttack => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            RecoilDown,
-            SkillDesc {
+
+            RecoilDown => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            QuickSheath,
-            SkillDesc {
+
+            QuickSheath => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            FireAttack,
-            SkillDesc {
+
+            FireAttack => SkillDesc {
                 limit: 5,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            IceAttack,
-            SkillDesc {
+
+            IceAttack => SkillDesc {
                 limit: 5,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            WaterAttack,
-            SkillDesc {
+
+            WaterAttack => SkillDesc {
                 limit: 5,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            ProtectivePolish,
-            SkillDesc {
+
+            ProtectivePolish => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            StaminaThief,
-            SkillDesc {
+
+            StaminaThief => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            Partbreaker,
-            SkillDesc {
+
+            Partbreaker => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            Mushroomancer,
-            SkillDesc {
+
+            Mushroomancer => SkillDesc {
                 limit: 3,
                 jewel_size: Some(3),
             },
-        );
-        m.insert(
-            MaximumMight,
-            SkillDesc {
+
+            MaximumMight => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            MarathonRunner,
-            SkillDesc {
+
+            MarathonRunner => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            PeakPerformance,
-            SkillDesc {
+
+            PeakPerformance => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            AttackBoost,
-            SkillDesc {
+
+            AttackBoost => SkillDesc {
                 limit: 7,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            OffensiveGuard,
-            SkillDesc {
+
+            OffensiveGuard => SkillDesc {
                 limit: 3,
                 jewel_size: Some(3),
             },
-        );
-        m.insert(
-            Focus,
-            SkillDesc {
+
+            Focus => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            RecoveryUp,
-            SkillDesc {
+
+            RecoveryUp => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            NormalRapidUp,
-            SkillDesc {
+
+            NormalRapidUp => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            SpeedEating,
-            SkillDesc {
+
+            SpeedEating => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Windproof,
-            SkillDesc {
+
+            Windproof => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            Bludgeoner,
-            SkillDesc {
+
+            Bludgeoner => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            AffinitySliding,
-            SkillDesc {
+
+            AffinitySliding => SkillDesc {
                 limit: 1,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            WideRange,
-            SkillDesc {
+
+            WideRange => SkillDesc {
                 limit: 5,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            StunResistance,
-            SkillDesc {
+
+            StunResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            LoadShells,
-            SkillDesc {
+
+            LoadShells => SkillDesc {
                 limit: 2,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            ParalysisAttack,
-            SkillDesc {
+
+            ParalysisAttack => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            PierceUp,
-            SkillDesc {
+
+            PierceUp => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            AimBooster,
-            SkillDesc {
+
+            AimBooster => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            SleepAttack,
-            SkillDesc {
+
+            SleepAttack => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            BlightResistance,
-            SkillDesc {
+
+            BlightResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            CriticalDraw,
-            SkillDesc {
+
+            CriticalDraw => SkillDesc {
                 limit: 3,
                 jewel_size: Some(3),
             },
-        );
-        m.insert(
-            JumpMaster,
-            SkillDesc {
+
+            JumpMaster => SkillDesc {
                 limit: 1,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            Constitution,
-            SkillDesc {
+
+            Constitution => SkillDesc {
                 limit: 5,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            FreeMeal,
-            SkillDesc {
+
+            FreeMeal => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            GoodLuck,
-            SkillDesc {
+
+            GoodLuck => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            RazorSharp,
-            SkillDesc {
+
+            RazorSharp => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            SpareShot,
-            SkillDesc {
+
+            SpareShot => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            WirebugWhisperer,
-            SkillDesc {
+
+            WirebugWhisperer => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Resentment,
-            SkillDesc {
+
+            Resentment => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            Handicraft,
-            SkillDesc {
+
+            Handicraft => SkillDesc {
                 limit: 5,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            FlinchFree,
-            SkillDesc {
+
+            FlinchFree => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            RapidMorph,
-            SkillDesc {
+
+            RapidMorph => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            LatentPower,
-            SkillDesc {
+
+            LatentPower => SkillDesc {
                 limit: 5,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            WeaknessExploit,
-            SkillDesc {
+
+            WeaknessExploit => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            Resuscitate,
-            SkillDesc {
+
+            Resuscitate => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            EvadeWindow,
-            SkillDesc {
+
+            EvadeWindow => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Slugger,
-            SkillDesc {
+
+            Slugger => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            SpecialAmmoBoost,
-            SkillDesc {
+
+            SpecialAmmoBoost => SkillDesc {
                 limit: 2,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Agitator,
-            SkillDesc {
+
+            Agitator => SkillDesc {
                 limit: 5,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            DevineBlessing,
-            SkillDesc {
+
+            DevineBlessing => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Geologist,
-            SkillDesc {
+
+            Geologist => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            HungerResistance,
-            SkillDesc {
+
+            HungerResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            CriticalElement,
-            SkillDesc {
+
+            CriticalElement => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            EvadeExtender,
-            SkillDesc {
+
+            EvadeExtender => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            DragonAttack,
-            SkillDesc {
+
+            DragonAttack => SkillDesc {
                 limit: 5,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            Heroics,
-            SkillDesc {
+
+            Heroics => SkillDesc {
                 limit: 5,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            SleepResistance,
-            SkillDesc {
+
+            SleepResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            ParalysisResistance,
-            SkillDesc {
+
+            ParalysisResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            PoisonResistance,
-            SkillDesc {
+
+            PoisonResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            WindAlignment,
-            SkillDesc {
+
+            WindAlignment => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            SpreadUp,
-            SkillDesc {
+
+            SpreadUp => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            ReloadSpeed,
-            SkillDesc {
+
+            ReloadSpeed => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            ThunderAlignment,
-            SkillDesc {
+
+            ThunderAlignment => SkillDesc {
                 limit: 5,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            Guard,
-            SkillDesc {
+
+            Guard => SkillDesc {
                 limit: 5,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            StaminaSurge,
-            SkillDesc {
+
+            StaminaSurge => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Earplugs,
-            SkillDesc {
+
+            Earplugs => SkillDesc {
                 limit: 5,
                 jewel_size: Some(3),
             },
-        );
-        m.insert(
-            BowChargePlus,
-            SkillDesc {
+
+            BowChargePlus => SkillDesc {
                 limit: 1,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            BlastResistance,
-            SkillDesc {
+
+            BlastResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            AmmoUp,
-            SkillDesc {
+
+            AmmoUp => SkillDesc {
                 limit: 3,
                 jewel_size: Some(3),
             },
-        );
-        m.insert(
-            LeapofFaith,
-            SkillDesc {
+
+            LeapofFaith => SkillDesc {
                 limit: 1,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            DragonResistance,
-            SkillDesc {
+
+            DragonResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            WaterResistance,
-            SkillDesc {
+
+            WaterResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            DivineBlessing,
-            SkillDesc {
+
+            DivineBlessing => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            RecoverySpeed,
-            SkillDesc {
+
+            RecoverySpeed => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            SpeedSharpening,
-            SkillDesc {
+
+            SpeedSharpening => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            MuckResistance,
-            SkillDesc {
+
+            MuckResistance => SkillDesc {
                 limit: 2,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            PowerProlonger,
-            SkillDesc {
+
+            PowerProlonger => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            TremorResistance,
-            SkillDesc {
+
+            TremorResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            HellfireCloak,
-            SkillDesc {
+
+            HellfireCloak => SkillDesc {
                 limit: 4,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            BubblyDance,
-            SkillDesc {
+
+            BubblyDance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            PunishingDraw,
-            SkillDesc {
+
+            PunishingDraw => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            WallRunner,
-            SkillDesc {
+
+            WallRunner => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            GuardUp,
-            SkillDesc {
+
+            GuardUp => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            CriticalBoost,
-            SkillDesc {
+
+            CriticalBoost => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            MindsEye,
-            SkillDesc {
+
+            MindsEye => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            BlastAttack,
-            SkillDesc {
+
+            BlastAttack => SkillDesc {
                 limit: 3,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            MasterMounter,
-            SkillDesc {
+
+            MasterMounter => SkillDesc {
                 limit: 1,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Counterstrike,
-            SkillDesc {
+
+            Counterstrike => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            ThunderAttack,
-            SkillDesc {
+
+            ThunderAttack => SkillDesc {
                 limit: 5,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            Artillery,
-            SkillDesc {
+
+            Artillery => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
             },
-        );
-        m.insert(
-            Bombardier,
-            SkillDesc {
+
+            Bombardier => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            CaptureMaster,
-            SkillDesc {
+
+            CaptureMaster => SkillDesc {
                 limit: 1,
                 jewel_size: None,
             },
-        );
-        m.insert(
-            Diversion,
-            SkillDesc {
+
+            Diversion => SkillDesc {
                 limit: 1,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            FireResistance,
-            SkillDesc {
+
+            FireResistance => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
             },
-        );
-        m.insert(
-            HornMaestro,
-            SkillDesc {
+
+            HornMaestro => SkillDesc {
                 limit: 1,
                 jewel_size: Some(1),
             },
-        );
-        m
-    };
+        }
+    }
 }

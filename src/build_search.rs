@@ -3,7 +3,7 @@ use std::{
     iter,
 };
 
-use crate::armor_ron::{Armor, Skill, SKILL_LIMIT_JEWEL_SIZE};
+use crate::armor_ron::{Armor, Skill};
 
 pub type Jewels = [Option<Skill>; 3];
 
@@ -64,9 +64,9 @@ fn brute_force_search_builds(
                         //reverse order
                         delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
                             let jewel_size_a =
-                                SKILL_LIMIT_JEWEL_SIZE.get(skill_a).unwrap().jewel_size;
+                                skill_a.get_jewel_size();
                             let jewel_size_b =
-                                SKILL_LIMIT_JEWEL_SIZE.get(skill_b).unwrap().jewel_size;
+                                skill_b.get_jewel_size();
                             match (jewel_size_a, jewel_size_b) {
                                 (None, None) => Ordering::Equal,
                                 (None, Some(_)) => Ordering::Greater,
@@ -102,7 +102,7 @@ fn brute_force_search_builds(
                                 if *amount > 0 {
                                     for slot in jewel_slots.iter_mut() {
                                         if let Some(jewel_size) =
-                                            SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                            skill.get_jewel_size()
                                         {
                                             if *slot >= jewel_size {
                                                 *slot = 0;
@@ -261,8 +261,7 @@ fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor]) -> Vec<Armor
             for (skill, _) in wishes {
                 // check if the armor can accept a jewel for one of the wanted skills
                 for &slot in &armor.slots {
-                    let skill_desc = SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap();
-                    if let Some(size) = skill_desc.jewel_size {
+                    if let Some(size) = skill.get_jewel_size() {
                         if slot >= size {
                             return true;
                         }
@@ -302,8 +301,7 @@ fn generate_virtual_slots(wishes: &[(Skill, u8)], skills: &[(Skill, u8)]) -> (bo
     for (wished_skill, _) in wishes {
         for (skill, amount) in skills {
             if skill == wished_skill {
-                let skill_desc = SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap();
-                if let Some(size) = skill_desc.jewel_size {
+                if let Some(size) = skill.get_jewel_size() {
                     for _ in 0..*amount {
                         virtual_slots.push(size);
                     }

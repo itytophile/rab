@@ -1,9 +1,9 @@
-use crate::armor_ron::{get_armor_list, Armor, Skill, SKILL_LIMIT_JEWEL_SIZE};
+use crate::armor_ron::{get_armor_list, Armor, Skill};
 use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
 use iced::{
-    button, pick_list, scrollable, slider, Align, Button, Column, Container, Element, Length,
-    PickList, Row, Rule, Sandbox, Scrollable, Slider, Space, Text,
+    button, pick_list, scrollable, slider, text_input, Align, Button, Column, Container, Element,
+    Length, PickList, Row, Rule, Sandbox, Scrollable, Slider, Space, Text, TextInput,
 };
 
 struct WishField {
@@ -33,6 +33,10 @@ pub struct MainApp {
     wish_fields: Vec<WishField>,
     state_add_wish_button: button::State,
     state_search_button: button::State,
+    state_filter_text_input: text_input::State,
+    value_filter_text_input: String,
+
+    wish_choices: Vec<Skill>,
 
     helmets: Vec<Armor>,
     chests: Vec<Armor>,
@@ -60,6 +64,7 @@ pub enum Message {
     SliderChanged(usize, u8),
     Search,
     ArmorDesc(Option<(Armor, [Option<Skill>; 3])>),
+    FilterChanged(String),
 }
 
 const WAISTS_PATH: &str = "waists.ron";
@@ -79,6 +84,7 @@ impl Sandbox for MainApp {
             arms: get_armor_list(ARMS_PATH),
             legs: get_armor_list(LEGS_PATH),
             chests: get_armor_list(CHESTS_PATH),
+            wish_choices: Skill::ALL.to_vec(),
 
             ..Self::default()
         }
@@ -116,6 +122,14 @@ impl Sandbox for MainApp {
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
             Message::ArmorDesc(option) => self.armor_desc = option,
+            Message::FilterChanged(text) => {
+                self.value_filter_text_input = text;
+                self.wish_choices = Skill::ALL
+                    .iter()
+                    .copied()
+                    .filter(|skill| skill.to_string().contains(&self.value_filter_text_input))
+                    .collect();
+            }
         }
     }
 
@@ -124,16 +138,14 @@ impl Sandbox for MainApp {
             .padding(20)
             .spacing(10)
             .align_items(Align::Center);
-
         let size = self.wish_fields.len();
-
         for (key, wish_field) in self.wish_fields.iter_mut().enumerate() {
             let pick_list = PickList::new(
                 &mut wish_field.state_pick_list,
-                &Skill::ALL[..],
+                &self.wish_choices,
                 Some(wish_field.selected),
                 move |w| Message::WishSelected(key, w),
-            );
+            ).width(Length::Units(200));
             let mut row = Row::new().spacing(10).push(pick_list);
             let mut remove_button =
                 Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
@@ -143,10 +155,7 @@ impl Sandbox for MainApp {
             }
             let slider = Slider::new(
                 &mut wish_field.state_slider,
-                1..=SKILL_LIMIT_JEWEL_SIZE
-                    .get(&wish_field.selected)
-                    .unwrap()
-                    .limit,
+                1..=wish_field.selected.get_limit(),
                 wish_field.value_slider,
                 move |value| Message::SliderChanged(key, value),
             )
@@ -183,6 +192,16 @@ impl Sandbox for MainApp {
                 }
             }
         }
+
+        let filter_text_input = TextInput::new(
+            &mut self.state_filter_text_input,
+            "Skill filter",
+            &self.value_filter_text_input,
+            Message::FilterChanged,
+        )
+        .padding(5)
+        .width(Length::Units(200));
+
         let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
             .style(style_iced::Button::Add)
             .on_press(Message::AddWish);
@@ -196,6 +215,7 @@ impl Sandbox for MainApp {
         let column_left = Column::new()
             .spacing(10)
             .push(buttons)
+            .push(filter_text_input)
             .push(scrollable_wishes.height(Length::FillPortion(2)))
             .push(armor_desc_to_element(&self.armor_desc).height(Length::FillPortion(3)))
             .align_items(Align::Center);
