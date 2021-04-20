@@ -82,104 +82,36 @@ fn brute_force_search_builds(
                                 }
                             }
                         });
-                        let mut jewel_slots_helmet = extract_slots_copy(helmet);
-                        let mut jewel_slots_chest = extract_slots_copy(chest);
-                        let mut jewel_slots_arm = extract_slots_copy(arm);
-                        let mut jewel_slots_waist = extract_slots_copy(waist);
-                        let mut jewel_slots_leg = extract_slots_copy(leg);
 
-                        let mut jewels_helmet: Jewels = [None; 3];
-                        let mut index_helmet = 0;
-                        let mut jewels_chest: Jewels = [None; 3];
-                        let mut index_chest = 0;
-                        let mut jewels_arm: Jewels = [None; 3];
-                        let mut index_arm = 0;
-                        let mut jewels_waist: Jewels = [None; 3];
-                        let mut index_waist = 0;
-                        let mut jewels_leg: Jewels = [None; 3];
-                        let mut index_leg = 0;
+                        let mut possible_jewels_for_each_part = [Jewels::default(); 5];
+                        let mut jewel_indices = [0; 5];
+                        let mut empty_armor_slots = [
+                            extract_slots_copy(&helmet),
+                            extract_slots_copy(&chest),
+                            extract_slots_copy(&arm),
+                            extract_slots_copy(&waist),
+                            extract_slots_copy(&leg),
+                        ];
 
-                        'zebi: for (skill, amount) in delta_wishes.iter_mut() {
-                            if *amount > 0 {
-                                for slot in jewel_slots_helmet.iter_mut() {
-                                    if let Some(jewel_size) =
-                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
-                                    {
-                                        if *slot >= jewel_size {
-                                            *slot = 0;
-                                            *amount -= 1;
-                                            jewels_helmet[index_helmet] = Some(*skill);
-                                            index_helmet += 1;
-                                            if *amount == 0 {
-                                                continue 'zebi;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if *amount > 0 {
-                                for slot in jewel_slots_chest.iter_mut() {
-                                    if let Some(jewel_size) =
-                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
-                                    {
-                                        if *slot >= jewel_size {
-                                            *slot = 0;
-                                            *amount -= 1;
-                                            jewels_chest[index_chest] = Some(*skill);
-                                            index_chest += 1;
-                                            if *amount == 0 {
-                                                continue 'zebi;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if *amount > 0 {
-                                for slot in jewel_slots_arm.iter_mut() {
-                                    if let Some(jewel_size) =
-                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
-                                    {
-                                        if *slot >= jewel_size {
-                                            *slot = 0;
-                                            *amount -= 1;
-                                            jewels_arm[index_arm] = Some(*skill);
-                                            index_arm += 1;
-                                            if *amount == 0 {
-                                                continue 'zebi;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if *amount > 0 {
-                                for slot in jewel_slots_waist.iter_mut() {
-                                    if let Some(jewel_size) =
-                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
-                                    {
-                                        if *slot >= jewel_size {
-                                            *slot = 0;
-                                            *amount -= 1;
-                                            jewels_waist[index_waist] = Some(*skill);
-                                            index_waist += 1;
-                                            if *amount == 0 {
-                                                continue 'zebi;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if *amount > 0 {
-                                for slot in jewel_slots_leg.iter_mut() {
-                                    if let Some(jewel_size) =
-                                        SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
-                                    {
-                                        if *slot >= jewel_size {
-                                            *slot = 0;
-                                            *amount -= 1;
-                                            jewels_leg[index_leg] = Some(*skill);
-                                            index_leg += 1;
-                                            if *amount == 0 {
-                                                continue 'zebi;
+                        'wish_loop: for (skill, amount) in delta_wishes.iter_mut() {
+                            for (jewel_slots, (jewels, index)) in empty_armor_slots.iter_mut().zip(
+                                possible_jewels_for_each_part
+                                    .iter_mut()
+                                    .zip(jewel_indices.iter_mut()),
+                            ) {
+                                if *amount > 0 {
+                                    for slot in jewel_slots.iter_mut() {
+                                        if let Some(jewel_size) =
+                                            SKILL_LIMIT_JEWEL_SIZE.get(skill).unwrap().jewel_size
+                                        {
+                                            if *slot >= jewel_size {
+                                                *slot = 0;
+                                                *amount -= 1;
+                                                jewels[*index] = Some(*skill);
+                                                *index += 1;
+                                                if *amount == 0 {
+                                                    continue 'wish_loop;
+                                                }
                                             }
                                         }
                                     }
@@ -191,36 +123,36 @@ fn brute_force_search_builds(
                             let build = Build {
                                 helmet: match helmet {
                                     None => None,
-                                    Some(armor) => Some((armor.clone(), jewels_helmet)),
+                                    Some(armor) => {
+                                        Some((armor.clone(), possible_jewels_for_each_part[0]))
+                                    }
                                 },
                                 chest: match chest {
                                     None => None,
-                                    Some(armor) => Some((armor.clone(), jewels_chest)),
+                                    Some(armor) => {
+                                        Some((armor.clone(), possible_jewels_for_each_part[1]))
+                                    }
                                 },
                                 arm: match arm {
                                     None => None,
-                                    Some(armor) => Some((armor.clone(), jewels_arm)),
+                                    Some(armor) => {
+                                        Some((armor.clone(), possible_jewels_for_each_part[2]))
+                                    }
                                 },
                                 waist: match waist {
                                     None => None,
-                                    Some(armor) => Some((armor.clone(), jewels_waist)),
+                                    Some(armor) => {
+                                        Some((armor.clone(), possible_jewels_for_each_part[3]))
+                                    }
                                 },
                                 leg: match leg {
                                     None => None,
-                                    Some(armor) => Some((armor.clone(), jewels_leg)),
+                                    Some(armor) => {
+                                        Some((armor.clone(), possible_jewels_for_each_part[4]))
+                                    }
                                 },
                             };
-                            /*
-                            print!("Gagné: ");
-                            for &option in &[helmet, chest, arm, waist, leg] {
-                                if let Some(armor) = option {
-                                    print!("{:?} ", armor.name);
-                                } else {
-                                    print!("None ");
-                                }
-                            }
-                            println!("");
-                            */
+                           
                             builds.push(build);
                         }
                     }
@@ -231,7 +163,7 @@ fn brute_force_search_builds(
     builds
 }
 
-fn extract_slots_copy(helmet: Option<&Armor>) -> [u8; 3] {
+fn extract_slots_copy(helmet: &Option<&Armor>) -> [u8; 3] {
     match helmet {
         Some(armor) => {
             let mut slots = [0; 3];
@@ -244,7 +176,14 @@ fn extract_slots_copy(helmet: Option<&Armor>) -> [u8; 3] {
     }
 }
 
-pub fn pre_selection_then_brute_force_search(wishes: &[(Skill, u8)], helmets: &[Armor], chests: &[Armor], arms: &[Armor], waists: &[Armor], legs: &[Armor]) -> Vec<Build> {
+pub fn pre_selection_then_brute_force_search(
+    wishes: &[(Skill, u8)],
+    helmets: &[Armor],
+    chests: &[Armor],
+    arms: &[Armor],
+    waists: &[Armor],
+    legs: &[Armor],
+) -> Vec<Build> {
     brute_force_search_builds(
         wishes,
         &search_best_candidates(wishes, helmets),
@@ -255,8 +194,6 @@ pub fn pre_selection_then_brute_force_search(wishes: &[(Skill, u8)], helmets: &[
     )
 }
 
-
-
 #[derive(Eq, PartialEq, Debug)]
 enum OddComparison {
     Better,
@@ -266,13 +203,10 @@ enum OddComparison {
 
 fn compare_armors(wishes: &[(Skill, u8)], a: &Armor, b: &Armor) -> OddComparison {
     // add virtual slot depending on the wished skills,
-    // if the skill has no jewel, the armor has top priority
+    // if the skill has no jewel (like Critical Boost), the armor has top priority
     let (delta_skills_a, delta_skills_b) = generate_deltas_skills(&a.skills, &b.skills);
     let (priority_a, virtual_slots_a) = generate_virtual_slots(wishes, &delta_skills_a);
     let (priority_b, virtual_slots_b) = generate_virtual_slots(wishes, &delta_skills_b);
-
-    //println!("{} {:?}", a.name, virtual_slots_a);
-    //println!("{} {:?}", b.name, virtual_slots_b);
 
     let mut slots_a_copy = Vec::with_capacity(3);
     let mut slots_b_copy = Vec::with_capacity(3);
@@ -297,7 +231,6 @@ fn compare_armors(wishes: &[(Skill, u8)], a: &Armor, b: &Armor) -> OddComparison
             && ((slots_a_copy == slots_b_copy && a.slots.len() < b.slots.len())
                 || compare_slots(&slots_a_copy, &slots_b_copy) == OddComparison::Worse)
         {
-            // println!("{} less than {}", a.name, b.name);
             return OddComparison::Worse;
         }
     } else if b.slots.len() + virtual_slots_b.len() <= a.slots.len() {
@@ -313,47 +246,15 @@ fn compare_armors(wishes: &[(Skill, u8)], a: &Armor, b: &Armor) -> OddComparison
             && ((slots_a_copy == slots_b_copy && b.slots.len() < a.slots.len())
                 || compare_slots(&slots_a_copy, &slots_b_copy) == OddComparison::Better)
         {
-            // println!("{} greater than {}", a.name, b.name);
             return OddComparison::Better;
         }
     }
-    /*
-    println!(
-        "{}: {}, {}: {}",
-        a.name,
-        a.slots.len() + virtual_slots_a.len(),
-        b.name,
-        b.slots.len() + virtual_slots_b.len()
-    );
-    */
-    // println!("{} same as {}", a.name, b.name);
+
     OddComparison::Undefined
 }
-/**
-Garde l'armure que si:
 
-- elle a un des skills
-ou elle peut mettre le skill sur un slot
-
-Comparer les armures ainsi obtenues
-- dégager les trivialement négligeables: d'autres armures ont plus de slots
-cela peut dégager des armures avec les skills choisi mais dominées par
-des armures avec plus de slots et qui peut acceuillir le joyau
-? -> compter les skills voulus comme des slots virtuels pour mieux comparer
-
-trivial
--> dégager les armures qui n'ont pas le skill et qui n'ont qu'un slot qui ne peuvent pas acceuillir le skill -> étape non obligatoire mais baisse le nombre d'opération de l'étape d'après
--> garder les armures avec le plus de slot, les armures qui ont le skill on un slot virtuel en plus qui a la taille du joyau du skill
-*/
-
-/**
-Cette phase ne compare pas l'utilité des skills prioritaires
-*/
-
-/**
-PISTE: l'égalité n'est pas transitive c'est la galewe
-*/
 fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor]) -> Vec<Armor> {
+    // trivial sort
     let armors: Vec<&Armor> = armors
         .iter()
         .filter(|armor| {
@@ -382,20 +283,15 @@ fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor]) -> Vec<Armor
     for &w in &armors {
         armors_copy.push(w.clone());
     }
+    // non trivial sort
     armors_copy.retain(|a| {
         for &b in &armors {
             if compare_armors(wishes, a, b) == OddComparison::Worse {
-                // println!("{} worse than {}", a.name, b.name);
                 return false;
             }
         }
         true
     });
-
-    for w in &armors_copy {
-        dbg!(&w.name);
-    }
-    println!("");
 
     armors_copy
 }
