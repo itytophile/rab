@@ -216,7 +216,6 @@ fn brute_force_search_builds(
                                     if replacement.is_none() {
                                         replacement = Some(old_build);
                                     } else {
-                                        println!("prout");
                                         // We continue to search builds worse
                                         // than the new part (yes this is possible)
                                         to_remove.push(key);
