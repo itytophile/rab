@@ -24,6 +24,12 @@ pub struct Armor {
     pub gender: Gender,
 }
 
+impl PartialEq for Armor {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
 pub fn get_armor_list(path: &str) -> Vec<Armor> {
     from_reader(File::open(path).expect(&format!("Failed opening {}", path))).unwrap()
 }

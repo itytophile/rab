@@ -1,4 +1,5 @@
 use std::{
+    array,
     cmp::{min, Ordering},
     iter,
 };
@@ -63,10 +64,8 @@ fn brute_force_search_builds(
                         }
                         //reverse order
                         delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
-                            let jewel_size_a =
-                                skill_a.get_jewel_size();
-                            let jewel_size_b =
-                                skill_b.get_jewel_size();
+                            let jewel_size_a = skill_a.get_jewel_size();
+                            let jewel_size_b = skill_b.get_jewel_size();
                             match (jewel_size_a, jewel_size_b) {
                                 (None, None) => Ordering::Equal,
                                 (None, Some(_)) => Ordering::Greater,
@@ -101,9 +100,7 @@ fn brute_force_search_builds(
                             ) {
                                 if *amount > 0 {
                                     for slot in jewel_slots.iter_mut() {
-                                        if let Some(jewel_size) =
-                                            skill.get_jewel_size()
-                                        {
+                                        if let Some(jewel_size) = skill.get_jewel_size() {
                                             if *slot >= jewel_size {
                                                 *slot = 0;
                                                 *amount -= 1;
@@ -152,8 +149,91 @@ fn brute_force_search_builds(
                                     }
                                 },
                             };
-                           
-                            builds.push(build);
+
+                            // Avoid having redondant builds like:
+                            // A B C D E
+                            // and
+                            // A B None D E
+                            // If the build with the None works, then it's useless to keep the first build
+                            // Naive algorithm ahead
+
+                            let mut push_it = true;
+                            let mut replacement: Option<&mut Build> = None;
+                            // maybe less than needed, maybe overkill. I don't really know
+                            let mut to_remove = Vec::with_capacity(20);
+
+                            for (key, old_build) in builds.iter_mut().enumerate() {
+                                let mut old_has_better_none = false;
+                                let mut new_has_better_none = false;
+                                // don't want to use .iter() because it will give &&Option<>
+                                // and don't want to use [build.helmet, build.chest, ...].iter() because it will copy
+                                // the elements (they don't even implement the Copy trait)
+                                for couple in array::IntoIter::new([
+                                    &build.helmet,
+                                    &build.chest,
+                                    &build.arm,
+                                    &build.waist,
+                                    &build.leg,
+                                ])
+                                .zip(array::IntoIter::new([
+                                    &old_build.helmet,
+                                    &old_build.chest,
+                                    &old_build.arm,
+                                    &old_build.waist,
+                                    &old_build.leg,
+                                ])) {
+                                    match couple {
+                                        (None, Some(_)) => {
+                                            new_has_better_none = true;
+                                            if old_has_better_none {
+                                                // if they have None at different places
+                                                break;
+                                            }
+                                        }
+                                        (Some(_), None) => {
+                                            old_has_better_none = true;
+                                            if new_has_better_none {
+                                                break;
+                                            }
+                                        }
+                                        (Some(part), Some(old_part)) if part.0 != old_part.0 => {
+                                            // they are not comparable
+                                            old_has_better_none = new_has_better_none;
+                                            break;
+                                        }
+                                        _ => {}
+                                    };
+                                }
+
+                                if old_has_better_none != new_has_better_none {
+                                    push_it = false;
+                                    if old_has_better_none {
+                                        break;
+                                    }
+                                    // have to move this reference
+                                    // out of the loop to please the
+                                    // compiler
+                                    if replacement.is_none() {
+                                        replacement = Some(old_build);
+                                    } else {
+                                        println!("prout");
+                                        // We continue to search builds worse
+                                        // than the new part (yes this is possible)
+                                        to_remove.push(key);
+                                    }
+                                }
+                            }
+                            if let Some(place) = replacement {
+                                *place = build;
+                            } else if push_it {
+                                builds.push(build);
+                            }
+                            to_remove.sort_unstable();
+
+                            // thank you https://stackoverflow.com/a/57948703
+                            for index in to_remove.drain(..).rev() {
+                                builds.swap_remove(index);
+                            }
                         }
                     }
                 }
