@@ -34,8 +34,11 @@ pub struct MainApp {
     scroll: scrollable::State,
     state_builds_scroll: scrollable::State,
     wish_fields: Vec<WishField>,
+
     state_add_wish_button: button::State,
+    state_talisman_button: button::State,
     state_search_button: button::State,
+
     state_filter_text_input: text_input::State,
     value_filter_text_input: String,
 
@@ -69,6 +72,7 @@ pub enum Message {
     Search,
     ArmorDesc(Option<(Armor, [Option<Skill>; 3])>),
     FilterChanged(String),
+    ManageTalisman,
 }
 
 const WAISTS_PATH: &str = "waists.ron";
@@ -95,7 +99,7 @@ impl Sandbox for MainApp {
     }
 
     fn title(&self) -> String {
-        String::from("Pick list - Iced")
+        String::from("RAB - Rusty Armor Builds")
     }
 
     fn update(&mut self, message: Message) {
@@ -140,6 +144,7 @@ impl Sandbox for MainApp {
                     })
                     .collect();
             }
+            Message::ManageTalisman => {}
         }
     }
 
@@ -217,12 +222,19 @@ impl Sandbox for MainApp {
         let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
             .style(style_iced::Button::Add)
             .on_press(Message::AddWish);
+        let talisman_button = Button::new(
+            &mut self.state_talisman_button,
+            Text::new("Manage talismans"),
+        )
+        .style(style_iced::Button::Talisman)
+        .on_press(Message::ManageTalisman);
         let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
             .style(style_iced::Button::Search)
             .on_press(Message::Search);
         let buttons = Row::new()
             .spacing(10)
             .push(add_wish_button)
+            .push(talisman_button)
             .push(search_button);
         let column_left = Column::new()
             .spacing(10)

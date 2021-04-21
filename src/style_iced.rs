@@ -56,6 +56,7 @@ pub enum Button {
     Add,
     Search,
     Result,
+    Talisman,
 }
 
 impl button::StyleSheet for Button {
@@ -83,6 +84,12 @@ impl button::StyleSheet for Button {
                 background: Some(Background::Color(Color::from_rgb(0.94, 0.96, 0.98))),
                 border_radius: 5.0,
                 text_color: Color::from_rgb(0.16, 0.44, 0.66),
+                ..button::Style::default()
+            },
+            Button::Talisman => button::Style {
+                background: Some(Background::Color(Color::from_rgb(0.24, 0.56, 0.82))),
+                border_radius: 5.0,
+                text_color: Color::WHITE,
                 ..button::Style::default()
             },
         }
