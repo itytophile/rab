@@ -1,8 +1,8 @@
 use ron::de::from_reader;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs::File};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Gender {
     Female,
     Male,
@@ -30,6 +30,13 @@ pub struct Armor {
     pub gender: Gender,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Talisman {
+    name: String,
+    skills: Vec<(Skill, u8)>,
+    slots: Vec<u8>,
+}
+
 impl PartialEq for Armor {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
@@ -37,7 +44,28 @@ impl PartialEq for Armor {
 }
 
 pub fn get_armor_list(path: &str) -> Vec<Armor> {
-    from_reader(File::open(path).expect(&format!("Failed opening {}", path))).unwrap()
+    from_reader(File::open(path).expect(&format!("Failed opening {}", path)))
+        .expect(&format!("The file {} has a bad format!", path))
+}
+
+fn talisman_to_armor(talisman: &Talisman) -> Armor {
+    Armor {
+        name: talisman.name.clone(),
+        skills: talisman.skills.clone(),
+        slots: talisman.slots.clone(),
+        ..Default::default()
+    }
+}
+
+pub fn get_talismans(path: &str) -> Vec<Armor> {
+    match File::open(path) {
+        Ok(file) => {
+            let talismans: Vec<Talisman> =
+                from_reader(file).expect(&format!("The file {} has a bad format!", path));
+            talismans.iter().map(talisman_to_armor).collect()
+        }
+        Err(_) => Vec::with_capacity(0),
+    }
 }
 
 struct SkillDesc {
@@ -45,7 +73,7 @@ struct SkillDesc {
     pub jewel_size: Option<u8>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Skill {
     Botanist,
     DefenseBoost,

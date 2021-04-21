@@ -1,7 +1,7 @@
 use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
 use crate::{
-    armor_ron::{get_armor_list, Armor, Skill},
+    armor_ron::{get_armor_list, get_talismans, Armor, Skill},
     build_search::Jewels,
 };
 use iced::{
@@ -33,6 +33,7 @@ impl Default for WishField {
 pub struct MainApp {
     scroll: scrollable::State,
     state_builds_scroll: scrollable::State,
+    state_desc_scroll: scrollable::State,
     wish_fields: Vec<WishField>,
 
     state_add_wish_button: button::State,
@@ -50,6 +51,8 @@ pub struct MainApp {
     waists: Vec<Armor>,
     legs: Vec<Armor>,
 
+    talismans: Vec<Armor>,
+
     builds: Vec<Build>,
     states_build_button: Vec<(
         button::State,
@@ -61,6 +64,19 @@ pub struct MainApp {
     )>,
 
     armor_desc: Option<(Armor, [Option<Skill>; 3])>,
+
+    page: Page,
+}
+
+enum Page {
+    Main,
+    Talisman,
+}
+
+impl Default for Page {
+    fn default() -> Self {
+        Page::Main
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -72,14 +88,16 @@ pub enum Message {
     Search,
     ArmorDesc(Option<(Armor, [Option<Skill>; 3])>),
     FilterChanged(String),
-    ManageTalisman,
+    ToggleTalisman,
 }
 
-const WAISTS_PATH: &str = "waists.ron";
-const HELMETS_PATH: &str = "helmets.ron";
-const ARMS_PATH: &str = "arms.ron";
-const LEGS_PATH: &str = "legs.ron";
-const CHESTS_PATH: &str = "chests.ron";
+const WAISTS_PATH: &str = "armors/waists.ron";
+const HELMETS_PATH: &str = "armors/helmets.ron";
+const ARMS_PATH: &str = "armors/arms.ron";
+const LEGS_PATH: &str = "armors/legs.ron";
+const CHESTS_PATH: &str = "armors/chests.ron";
+
+const TALISMANS_PATH: &str = "talismans.ron";
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -92,6 +110,7 @@ impl Sandbox for MainApp {
             arms: get_armor_list(ARMS_PATH),
             legs: get_armor_list(LEGS_PATH),
             chests: get_armor_list(CHESTS_PATH),
+            talismans: get_talismans(TALISMANS_PATH),
             wish_choices: Skill::ALL.to_vec(),
 
             ..Self::default()
@@ -126,7 +145,7 @@ impl Sandbox for MainApp {
                     &self.arms,
                     &self.waists,
                     &self.legs,
-                    &[],
+                    &self.talismans,
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
@@ -144,43 +163,14 @@ impl Sandbox for MainApp {
                     })
                     .collect();
             }
-            Message::ManageTalisman => {}
+            Message::ToggleTalisman => match self.page {
+                Page::Main => self.page = Page::Talisman,
+                _ => self.page = Page::Main,
+            },
         }
     }
 
     fn view(&mut self) -> Element<Message> {
-        let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
-            .padding(20)
-            .spacing(10)
-            .align_items(Align::Center);
-        let size = self.wish_fields.len();
-        for (key, wish_field) in self.wish_fields.iter_mut().enumerate() {
-            let pick_list = PickList::new(
-                &mut wish_field.state_pick_list,
-                &self.wish_choices,
-                Some(wish_field.selected),
-                move |w| Message::WishSelected(key, w),
-            )
-            .width(Length::Units(200));
-            let mut row = Row::new().spacing(10).push(pick_list);
-            let mut remove_button =
-                Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
-                    .style(style_iced::Button::Remove);
-            if size > 1 {
-                remove_button = remove_button.on_press(Message::RemoveWish(key));
-            }
-            let slider = Slider::new(
-                &mut wish_field.state_slider,
-                1..=wish_field.selected.get_limit(),
-                wish_field.value_slider,
-                move |value| Message::SliderChanged(key, value),
-            )
-            .width(Length::Units(100));
-            let text = Text::new(format!("{}", wish_field.value_slider));
-            row = row.push(slider).push(text).push(remove_button);
-            scrollable_wishes = scrollable_wishes.push(row);
-        }
-
         let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
             .align_items(Align::Center)
             .spacing(10)
@@ -210,39 +200,92 @@ impl Sandbox for MainApp {
             }
         }
 
-        let filter_text_input = TextInput::new(
-            &mut self.state_filter_text_input,
-            "Skill filter",
-            &self.value_filter_text_input,
-            Message::FilterChanged,
-        )
-        .padding(5)
-        .width(Length::Units(200));
+        let column_left = match self.page {
+            Page::Main => {
+                let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
+                    .padding(20)
+                    .spacing(10)
+                    .align_items(Align::Center);
+                let size = self.wish_fields.len();
+                for (key, wish_field) in self.wish_fields.iter_mut().enumerate() {
+                    let pick_list = PickList::new(
+                        &mut wish_field.state_pick_list,
+                        &self.wish_choices,
+                        Some(wish_field.selected),
+                        move |w| Message::WishSelected(key, w),
+                    )
+                    .width(Length::Units(200));
+                    let mut row = Row::new().spacing(10).push(pick_list);
+                    let mut remove_button =
+                        Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
+                            .style(style_iced::Button::Remove);
+                    if size > 1 {
+                        remove_button = remove_button.on_press(Message::RemoveWish(key));
+                    }
+                    let slider = Slider::new(
+                        &mut wish_field.state_slider,
+                        1..=wish_field.selected.get_limit(),
+                        wish_field.value_slider,
+                        move |value| Message::SliderChanged(key, value),
+                    )
+                    .width(Length::Units(100));
+                    let text = Text::new(format!("{}", wish_field.value_slider));
+                    row = row.push(slider).push(text).push(remove_button);
+                    scrollable_wishes = scrollable_wishes.push(row);
+                }
+                let filter_text_input = TextInput::new(
+                    &mut self.state_filter_text_input,
+                    "Skill filter",
+                    &self.value_filter_text_input,
+                    Message::FilterChanged,
+                )
+                .padding(5)
+                .width(Length::Units(200));
 
-        let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
-            .style(style_iced::Button::Add)
-            .on_press(Message::AddWish);
-        let talisman_button = Button::new(
-            &mut self.state_talisman_button,
-            Text::new("Manage talismans"),
-        )
-        .style(style_iced::Button::Talisman)
-        .on_press(Message::ManageTalisman);
-        let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
-            .style(style_iced::Button::Search)
-            .on_press(Message::Search);
-        let buttons = Row::new()
-            .spacing(10)
-            .push(add_wish_button)
-            .push(talisman_button)
-            .push(search_button);
-        let column_left = Column::new()
-            .spacing(10)
-            .push(buttons)
-            .push(filter_text_input)
-            .push(scrollable_wishes.height(Length::FillPortion(2)))
-            .push(armor_desc_to_element(&self.armor_desc).height(Length::FillPortion(3)))
-            .align_items(Align::Center);
+                let add_wish_button =
+                    Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
+                        .style(style_iced::Button::Add)
+                        .on_press(Message::AddWish);
+                let talisman_button = Button::new(
+                    &mut self.state_talisman_button,
+                    Text::new("Manage talismans"),
+                )
+                .style(style_iced::Button::Talisman)
+                .on_press(Message::ToggleTalisman);
+                let search_button =
+                    Button::new(&mut self.state_search_button, Text::new("Search builds"))
+                        .style(style_iced::Button::Search)
+                        .on_press(Message::Search);
+                let buttons = Row::new()
+                    .spacing(10)
+                    .push(add_wish_button)
+                    .push(talisman_button)
+                    .push(search_button);
+                Column::new()
+                    .spacing(10)
+                    .push(buttons)
+                    .push(filter_text_input)
+                    .push(scrollable_wishes.height(Length::FillPortion(2)))
+                    .push(
+                        Scrollable::new(&mut self.state_desc_scroll)
+                            .push(armor_desc_to_element(&self.armor_desc))
+                            .align_items(Align::Center)
+                            .height(Length::FillPortion(3)),
+                    )
+            }
+            Page::Talisman => {
+                let back_button = Button::new(
+                    &mut self.state_talisman_button,
+                    Container::new(Text::new("Back"))
+                        .center_x()
+                        .width(Length::Units(100)),
+                )
+                .style(style_iced::Button::Talisman)
+                .on_press(Message::ToggleTalisman);
+                Column::new().push(back_button)
+            }
+        }
+        .align_items(Align::Center);
 
         let mut col_titles = Row::new();
 
@@ -262,7 +305,7 @@ impl Sandbox for MainApp {
 
         Row::new()
             .padding(5)
-            .push(column_left)
+            .push(column_left.width(Length::Units(450)))
             .push(column_right)
             .into()
     }
@@ -296,7 +339,10 @@ fn build_part_to_button<'a>(
 
 fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
     if let Some((armor, skills)) = armor {
-        let mut col_armor_stats = Column::new().align_items(Align::Center).spacing(5);
+        let mut col_armor_stats = Column::new()
+            .align_items(Align::Center)
+            .spacing(5)
+            .push(Text::new(&armor.name));
         for (style, name, value) in std::array::IntoIter::new([
             (
                 style_iced::Container::Defense,
@@ -357,6 +403,6 @@ fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
         }
         col_armor_stats
     } else {
-        Column::new().push(Text::new("None"))
+        Column::new()
     }
 }
