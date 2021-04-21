@@ -1,3 +1,5 @@
+use std::{array, cmp::Ordering};
+
 use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
 use crate::{
@@ -289,8 +291,7 @@ impl Sandbox for MainApp {
 
         let mut col_titles = Row::new();
 
-        for col_name in
-            std::array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"])
+        for col_name in array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"])
         {
             col_titles = col_titles.push(
                 Text::new(col_name)
@@ -338,12 +339,12 @@ fn build_part_to_button<'a>(
 }
 
 fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
-    if let Some((armor, skills)) = armor {
+    if let Some((armor, jewel_skills)) = armor {
         let mut col_armor_stats = Column::new()
             .align_items(Align::Center)
             .spacing(5)
             .push(Text::new(&armor.name));
-        for (style, name, value) in std::array::IntoIter::new([
+        for (style, name, value) in array::IntoIter::new([
             (
                 style_iced::Container::Defense,
                 "Defense",
@@ -372,7 +373,7 @@ fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
             )
         }
 
-        if armor.skills.len() > 0 {
+        if armor.skills.len() > 0 || armor.slots.len() > 0 {
             col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
         }
 
@@ -385,22 +386,63 @@ fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
             )
         }
 
-        let mut has_put_first_jewel = false;
-
-        for skill in skills {
-            if let Some(skill) = skill {
-                if !has_put_first_jewel {
-                    col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
-                    has_put_first_jewel = true;
-                }
-                col_armor_stats = col_armor_stats.push(
-                    Container::new(Text::new(format!("Jewel {}", skill)))
-                        .width(Length::Units(170))
-                        .center_x()
-                        .style(style_iced::Container::Ice),
-                )
-            }
+        if armor.skills.len() > 0 && armor.slots.len() > 0 {
+            col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
         }
+
+        let mut slots = armor.slots.clone();
+        slots.sort_unstable();
+
+        let mut couple_slot_jewel = Vec::with_capacity(3);
+
+        let mut jewel_skills: Vec<Skill> = jewel_skills
+            .iter()
+            .copied()
+            .filter(Option::is_some)
+            .map(Option::unwrap)
+            .collect();
+        // reverse order
+        jewel_skills.sort_unstable_by(|a, b| {
+            if a.get_jewel_size() > b.get_jewel_size() {
+                Ordering::Less
+            } else if a.get_jewel_size() < b.get_jewel_size() {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+
+        // to be sure that the jewel will be on the most little slot possible
+        let mut to_remove = None;
+        'slot_loop: for slot in slots {
+            if let Some(index) = to_remove {
+                jewel_skills.swap_remove(index);
+                to_remove = None;
+            }
+            for (index, skill) in jewel_skills.iter().enumerate() {
+                if skill.get_jewel_size().unwrap() <= slot {
+                    couple_slot_jewel.push((slot, Some(*skill)));
+                    to_remove = Some(index);
+                    continue 'slot_loop;
+                }
+            }
+            couple_slot_jewel.push((slot, None));
+        }
+
+        for (slot, skill) in couple_slot_jewel {
+            col_armor_stats = col_armor_stats.push(if let Some(skill) = skill {
+                Container::new(Text::new(format!("{} on lvl {} slot", skill, slot)))
+                    .width(Length::Units(170))
+                    .center_x()
+                    .style(style_iced::Container::Ice)
+            } else {
+                Container::new(Text::new(format!("Free lvl {} slot", slot)))
+                    .width(Length::Units(170))
+                    .center_x()
+                    .style(style_iced::Container::Ice)
+            });
+        }
+
         col_armor_stats
     } else {
         Column::new()
