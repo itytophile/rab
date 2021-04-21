@@ -4,7 +4,7 @@ use std::{
     iter,
 };
 
-use crate::armor_ron::{Armor, Skill};
+use crate::armor_ron::{Armor, Gender, Skill};
 
 use itertools::Itertools;
 
@@ -257,15 +257,16 @@ pub fn pre_selection_then_brute_force_search(
     waists: &[Armor],
     legs: &[Armor],
     talismans: &[Armor],
+    gender: Gender
 ) -> Vec<Build> {
     brute_force_search_builds(
         wishes,
-        &search_best_candidates(wishes, helmets),
-        &search_best_candidates(wishes, chests),
-        &search_best_candidates(wishes, arms),
-        &search_best_candidates(wishes, waists),
-        &search_best_candidates(wishes, legs),
-        &search_best_candidates(wishes, talismans),
+        &search_best_candidates(wishes, helmets, gender),
+        &search_best_candidates(wishes, chests, gender),
+        &search_best_candidates(wishes, arms, gender),
+        &search_best_candidates(wishes, waists, gender),
+        &search_best_candidates(wishes, legs, gender),
+        &search_best_candidates(wishes, talismans, gender),
     )
 }
 
@@ -328,10 +329,11 @@ fn compare_armors(wishes: &[(Skill, u8)], a: &Armor, b: &Armor) -> OddComparison
     OddComparison::Undefined
 }
 
-fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor]) -> Vec<Armor> {
+fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor], gender: Gender) -> Vec<Armor> {
     // trivial sort
     let armors: Vec<&Armor> = armors
         .iter()
+        .filter(|armor| armor.gender == Gender::Neutral || armor.gender == gender)
         .filter(|armor| {
             for (skill, _) in wishes {
                 // check if the armor can accept a jewel for one of the wanted skills

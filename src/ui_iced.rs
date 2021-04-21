@@ -3,7 +3,7 @@ use std::{array, cmp::Ordering};
 use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
 use crate::{
-    armor_ron::{get_armor_list, get_talismans, Armor, Skill},
+    armor_ron::{get_armor_list, get_talismans, Armor, Skill, Gender},
     build_search::Jewels,
 };
 use iced::{
@@ -148,6 +148,7 @@ impl Sandbox for MainApp {
                     &self.waists,
                     &self.legs,
                     &self.talismans,
+                    Gender::Male
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
@@ -284,7 +285,14 @@ impl Sandbox for MainApp {
                 )
                 .style(style_iced::Button::Talisman)
                 .on_press(Message::ToggleTalisman);
-                Column::new().push(back_button)
+
+                let mut talisman_column = Column::new();
+
+                for talisman in self.talismans.iter() {
+                    talisman_column = talisman_column.push(Text::new(&talisman.name));
+                }
+
+                Column::new().push(back_button).push(talisman_column)
             }
         }
         .align_items(Align::Center);
