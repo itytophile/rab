@@ -1,6 +1,9 @@
-use crate::armor_ron::{get_armor_list, Armor, Skill};
 use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
+use crate::{
+    armor_ron::{get_armor_list, Armor, Skill},
+    build_search::Jewels,
+};
 use iced::{
     button, pick_list, scrollable, slider, text_input, Align, Button, Column, Container, Element,
     Length, PickList, Row, Rule, Sandbox, Scrollable, Slider, Space, Text, TextInput,
@@ -46,6 +49,7 @@ pub struct MainApp {
 
     builds: Vec<Build>,
     states_build_button: Vec<(
+        button::State,
         button::State,
         button::State,
         button::State,
@@ -118,6 +122,7 @@ impl Sandbox for MainApp {
                     &self.arms,
                     &self.waists,
                     &self.legs,
+                    &[],
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
@@ -191,7 +196,8 @@ impl Sandbox for MainApp {
                     .push(build_part_to_button(&mut state_button.1, &build.chest))
                     .push(build_part_to_button(&mut state_button.2, &build.arm))
                     .push(build_part_to_button(&mut state_button.3, &build.waist))
-                    .push(build_part_to_button(&mut state_button.4, &build.leg));
+                    .push(build_part_to_button(&mut state_button.4, &build.leg))
+                    .push(build_part_to_button(&mut state_button.5, &build.talisman));
                 builds_scrolls = builds_scrolls.push(row_build);
                 if key < size - 1 {
                     builds_scrolls = builds_scrolls.push(Rule::horizontal(1))
@@ -228,7 +234,9 @@ impl Sandbox for MainApp {
 
         let mut col_titles = Row::new();
 
-        for col_name in std::array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg"]) {
+        for col_name in
+            std::array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"])
+        {
             col_titles = col_titles.push(
                 Text::new(col_name)
                     .width(Length::Fill)
@@ -250,7 +258,7 @@ impl Sandbox for MainApp {
 
 fn build_part_to_button<'a>(
     state: &'a mut button::State,
-    build_part: &Option<(Armor, [Option<Skill>; 3])>,
+    build_part: &Option<(Armor, Jewels)>,
 ) -> Button<'a, Message> {
     let button = Button::new(
         state,
@@ -274,7 +282,7 @@ fn build_part_to_button<'a>(
     }
 }
 
-fn armor_desc_to_element(armor: &Option<(Armor, [Option<Skill>; 3])>) -> Column<Message> {
+fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
     if let Some((armor, skills)) = armor {
         let mut col_armor_stats = Column::new().align_items(Align::Center).spacing(5);
         for (style, name, value) in std::array::IntoIter::new([

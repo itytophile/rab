@@ -17,6 +17,7 @@ pub struct Build {
     pub arm: Option<(Armor, Jewels)>,
     pub waist: Option<(Armor, Jewels)>,
     pub leg: Option<(Armor, Jewels)>,
+    pub talisman: Option<(Armor, Jewels)>,
 }
 
 fn optionify_slice_and_add_none<T>(slice: &[T]) -> Vec<Option<&T>> {
@@ -34,16 +35,17 @@ fn brute_force_search_builds(
     arms: &[Armor],
     waists: &[Armor],
     legs: &[Armor],
+    talismans: &[Armor],
 ) -> Vec<Build> {
     let mut builds: Vec<Build> = Vec::with_capacity(500);
-    for v in array::IntoIter::new([helmets, chests, arms, waists, legs])
+    for v in array::IntoIter::new([helmets, chests, arms, waists, legs, talismans])
         .map(optionify_slice_and_add_none)
         .multi_cartesian_product()
     {
-        let (helmet, chest, arm, waist, leg) = (v[0], v[1], v[2], v[3], v[4]);
+        let (helmet, chest, arm, waist, leg, talisman) = (v[0], v[1], v[2], v[3], v[4], v[5]);
 
         let mut delta_wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
-        for &option in &[helmet, chest, arm, waist, leg] {
+        for &option in &[helmet, chest, arm, waist, leg, talisman] {
             if let Some(armor) = option {
                 for &(skill, amount) in &armor.skills {
                     for (w_skill, w_amount) in delta_wishes.iter_mut() {
@@ -78,14 +80,17 @@ fn brute_force_search_builds(
             }
         });
 
-        let mut possible_jewels_for_each_part = [Jewels::default(); 5];
-        let mut jewel_indices = [0; 5];
+        const NB_PARTS: usize = 6;
+
+        let mut possible_jewels_for_each_part = [Jewels::default(); NB_PARTS];
+        let mut jewel_indices = [0; NB_PARTS];
         let mut empty_armor_slots = [
             extract_slots_copy(&helmet),
             extract_slots_copy(&chest),
             extract_slots_copy(&arm),
             extract_slots_copy(&waist),
             extract_slots_copy(&leg),
+            extract_slots_copy(&talisman),
         ];
 
         'wish_loop: for (skill, amount) in delta_wishes.iter_mut() {
@@ -134,6 +139,10 @@ fn brute_force_search_builds(
                     None => None,
                     Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[4])),
                 },
+                talisman: match talisman {
+                    None => None,
+                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[5])),
+                },
             };
 
             // Avoid having redondant builds like:
@@ -160,6 +169,7 @@ fn brute_force_search_builds(
                     &build.arm,
                     &build.waist,
                     &build.leg,
+                    &build.talisman,
                 ])
                 .zip(array::IntoIter::new([
                     &old_build.helmet,
@@ -167,6 +177,7 @@ fn brute_force_search_builds(
                     &old_build.arm,
                     &old_build.waist,
                     &old_build.leg,
+                    &old_build.talisman,
                 ])) {
                     match couple {
                         (None, Some(_)) => {
@@ -245,6 +256,7 @@ pub fn pre_selection_then_brute_force_search(
     arms: &[Armor],
     waists: &[Armor],
     legs: &[Armor],
+    talismans: &[Armor],
 ) -> Vec<Build> {
     brute_force_search_builds(
         wishes,
@@ -253,6 +265,7 @@ pub fn pre_selection_then_brute_force_search(
         &search_best_candidates(wishes, arms),
         &search_best_candidates(wishes, waists),
         &search_best_candidates(wishes, legs),
+        &search_best_candidates(wishes, talismans),
     )
 }
 

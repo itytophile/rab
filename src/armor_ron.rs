@@ -9,7 +9,13 @@ pub enum Gender {
     Neutral,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+impl Default for Gender {
+    fn default() -> Self {
+        Gender::Neutral
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Armor {
     pub name: String,
     pub skills: Vec<(Skill, u8)>,
