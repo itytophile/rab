@@ -127,7 +127,12 @@ impl Sandbox for MainApp {
                 self.wish_choices = Skill::ALL
                     .iter()
                     .copied()
-                    .filter(|skill| skill.to_string().contains(&self.value_filter_text_input))
+                    .filter(|skill| {
+                        skill
+                            .to_string()
+                            .to_ascii_lowercase()
+                            .contains(&self.value_filter_text_input.to_ascii_lowercase())
+                    })
                     .collect();
             }
         }
@@ -145,7 +150,8 @@ impl Sandbox for MainApp {
                 &self.wish_choices,
                 Some(wish_field.selected),
                 move |w| Message::WishSelected(key, w),
-            ).width(Length::Units(200));
+            )
+            .width(Length::Units(200));
             let mut row = Row::new().spacing(10).push(pick_list);
             let mut remove_button =
                 Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
