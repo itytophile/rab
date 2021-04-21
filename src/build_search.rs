@@ -6,6 +6,8 @@ use std::{
 
 use crate::armor_ron::{Armor, Skill};
 
+use itertools::Itertools;
+
 pub type Jewels = [Option<Skill>; 3];
 
 #[derive(Debug)]
@@ -33,212 +35,193 @@ fn brute_force_search_builds(
     waists: &[Armor],
     legs: &[Armor],
 ) -> Vec<Build> {
-    let helmets = optionify_slice_and_add_none(helmets);
-    let chests = optionify_slice_and_add_none(chests);
-    let arms = optionify_slice_and_add_none(arms);
-    let waists = optionify_slice_and_add_none(waists);
-    let legs = optionify_slice_and_add_none(legs);
-
     let mut builds: Vec<Build> = Vec::with_capacity(500);
+    for v in array::IntoIter::new([helmets, chests, arms, waists, legs])
+        .map(optionify_slice_and_add_none)
+        .multi_cartesian_product()
+    {
+        let (helmet, chest, arm, waist, leg) = (v[0], v[1], v[2], v[3], v[4]);
 
-    for &helmet in &helmets {
-        for &chest in &chests {
-            for &arm in &arms {
-                for &waist in &waists {
-                    for &leg in &legs {
-                        let mut delta_wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
-                        for &option in &[helmet, chest, arm, waist, leg] {
-                            if let Some(armor) = option {
-                                for &(skill, amount) in &armor.skills {
-                                    for (w_skill, w_amount) in delta_wishes.iter_mut() {
-                                        if skill == *w_skill {
-                                            if amount > *w_amount {
-                                                *w_amount = 0;
-                                            } else {
-                                                *w_amount -= amount;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        //reverse order
-                        delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
-                            let jewel_size_a = skill_a.get_jewel_size();
-                            let jewel_size_b = skill_b.get_jewel_size();
-                            match (jewel_size_a, jewel_size_b) {
-                                (None, None) => Ordering::Equal,
-                                (None, Some(_)) => Ordering::Greater,
-                                (Some(_), None) => Ordering::Less,
-                                (Some(a), Some(b)) => {
-                                    if a > b {
-                                        Ordering::Less
-                                    } else if a < b {
-                                        Ordering::Greater
-                                    } else {
-                                        Ordering::Equal
-                                    }
-                                }
-                            }
-                        });
-
-                        let mut possible_jewels_for_each_part = [Jewels::default(); 5];
-                        let mut jewel_indices = [0; 5];
-                        let mut empty_armor_slots = [
-                            extract_slots_copy(&helmet),
-                            extract_slots_copy(&chest),
-                            extract_slots_copy(&arm),
-                            extract_slots_copy(&waist),
-                            extract_slots_copy(&leg),
-                        ];
-
-                        'wish_loop: for (skill, amount) in delta_wishes.iter_mut() {
-                            for (jewel_slots, (jewels, index)) in empty_armor_slots.iter_mut().zip(
-                                possible_jewels_for_each_part
-                                    .iter_mut()
-                                    .zip(jewel_indices.iter_mut()),
-                            ) {
-                                if *amount > 0 {
-                                    for slot in jewel_slots.iter_mut() {
-                                        if let Some(jewel_size) = skill.get_jewel_size() {
-                                            if *slot >= jewel_size {
-                                                *slot = 0;
-                                                *amount -= 1;
-                                                jewels[*index] = Some(*skill);
-                                                *index += 1;
-                                                if *amount == 0 {
-                                                    continue 'wish_loop;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if delta_wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
-                            let build = Build {
-                                helmet: match helmet {
-                                    None => None,
-                                    Some(armor) => {
-                                        Some((armor.clone(), possible_jewels_for_each_part[0]))
-                                    }
-                                },
-                                chest: match chest {
-                                    None => None,
-                                    Some(armor) => {
-                                        Some((armor.clone(), possible_jewels_for_each_part[1]))
-                                    }
-                                },
-                                arm: match arm {
-                                    None => None,
-                                    Some(armor) => {
-                                        Some((armor.clone(), possible_jewels_for_each_part[2]))
-                                    }
-                                },
-                                waist: match waist {
-                                    None => None,
-                                    Some(armor) => {
-                                        Some((armor.clone(), possible_jewels_for_each_part[3]))
-                                    }
-                                },
-                                leg: match leg {
-                                    None => None,
-                                    Some(armor) => {
-                                        Some((armor.clone(), possible_jewels_for_each_part[4]))
-                                    }
-                                },
-                            };
-
-                            // Avoid having redondant builds like:
-                            // A B C D E
-                            // and
-                            // A B None D E
-                            // If the build with the None works, then it's useless to keep the first build
-                            // Naive algorithm ahead
-
-                            let mut push_it = true;
-                            let mut replacement: Option<&mut Build> = None;
-                            // maybe less than needed, maybe overkill. I don't really know
-                            let mut to_remove = Vec::with_capacity(20);
-
-                            for (key, old_build) in builds.iter_mut().enumerate() {
-                                let mut old_has_better_none = false;
-                                let mut new_has_better_none = false;
-                                // don't want to use .iter() because it will give &&Option<>
-                                // and don't want to use [build.helmet, build.chest, ...].iter() because it will copy
-                                // the elements (they don't even implement the Copy trait)
-                                for couple in array::IntoIter::new([
-                                    &build.helmet,
-                                    &build.chest,
-                                    &build.arm,
-                                    &build.waist,
-                                    &build.leg,
-                                ])
-                                .zip(array::IntoIter::new([
-                                    &old_build.helmet,
-                                    &old_build.chest,
-                                    &old_build.arm,
-                                    &old_build.waist,
-                                    &old_build.leg,
-                                ])) {
-                                    match couple {
-                                        (None, Some(_)) => {
-                                            new_has_better_none = true;
-                                            if old_has_better_none {
-                                                // if they have None at different places
-                                                break;
-                                            }
-                                        }
-                                        (Some(_), None) => {
-                                            old_has_better_none = true;
-                                            if new_has_better_none {
-                                                break;
-                                            }
-                                        }
-                                        (Some(part), Some(old_part)) if part.0 != old_part.0 => {
-                                            // they are not comparable
-                                            old_has_better_none = new_has_better_none;
-                                            break;
-                                        }
-                                        _ => {}
-                                    };
-                                }
-
-                                if old_has_better_none != new_has_better_none {
-                                    push_it = false;
-                                    if old_has_better_none {
-                                        break;
-                                    }
-                                    // have to move this reference
-                                    // out of the loop to please the
-                                    // compiler
-                                    if replacement.is_none() {
-                                        replacement = Some(old_build);
-                                    } else {
-                                        // We continue to search builds worse
-                                        // than the new part (yes this is possible)
-                                        to_remove.push(key);
-                                    }
-                                }
-                            }
-                            if let Some(place) = replacement {
-                                *place = build;
-                            } else if push_it {
-                                builds.push(build);
-                            }
-                            to_remove.sort_unstable();
-
-                            // thank you https://stackoverflow.com/a/57948703
-                            for index in to_remove.drain(..).rev() {
-                                builds.swap_remove(index);
+        let mut delta_wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
+        for &option in &[helmet, chest, arm, waist, leg] {
+            if let Some(armor) = option {
+                for &(skill, amount) in &armor.skills {
+                    for (w_skill, w_amount) in delta_wishes.iter_mut() {
+                        if skill == *w_skill {
+                            if amount > *w_amount {
+                                *w_amount = 0;
+                            } else {
+                                *w_amount -= amount;
                             }
                         }
                     }
                 }
             }
         }
+        //reverse order
+        delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
+            let jewel_size_a = skill_a.get_jewel_size();
+            let jewel_size_b = skill_b.get_jewel_size();
+            match (jewel_size_a, jewel_size_b) {
+                (None, None) => Ordering::Equal,
+                (None, Some(_)) => Ordering::Greater,
+                (Some(_), None) => Ordering::Less,
+                (Some(a), Some(b)) => {
+                    if a > b {
+                        Ordering::Less
+                    } else if a < b {
+                        Ordering::Greater
+                    } else {
+                        Ordering::Equal
+                    }
+                }
+            }
+        });
+
+        let mut possible_jewels_for_each_part = [Jewels::default(); 5];
+        let mut jewel_indices = [0; 5];
+        let mut empty_armor_slots = [
+            extract_slots_copy(&helmet),
+            extract_slots_copy(&chest),
+            extract_slots_copy(&arm),
+            extract_slots_copy(&waist),
+            extract_slots_copy(&leg),
+        ];
+
+        'wish_loop: for (skill, amount) in delta_wishes.iter_mut() {
+            for (jewel_slots, (jewels, index)) in empty_armor_slots.iter_mut().zip(
+                possible_jewels_for_each_part
+                    .iter_mut()
+                    .zip(jewel_indices.iter_mut()),
+            ) {
+                if *amount > 0 {
+                    for slot in jewel_slots.iter_mut() {
+                        if let Some(jewel_size) = skill.get_jewel_size() {
+                            if *slot >= jewel_size {
+                                *slot = 0;
+                                *amount -= 1;
+                                jewels[*index] = Some(*skill);
+                                *index += 1;
+                                if *amount == 0 {
+                                    continue 'wish_loop;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if delta_wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
+            let build = Build {
+                helmet: match helmet {
+                    None => None,
+                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[0])),
+                },
+                chest: match chest {
+                    None => None,
+                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[1])),
+                },
+                arm: match arm {
+                    None => None,
+                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[2])),
+                },
+                waist: match waist {
+                    None => None,
+                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[3])),
+                },
+                leg: match leg {
+                    None => None,
+                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[4])),
+                },
+            };
+
+            // Avoid having redondant builds like:
+            // A B C D E
+            // and
+            // A B None D E
+            // If the build with the None works, then it's useless to keep the first build
+            // Naive algorithm ahead
+
+            let mut push_it = true;
+            let mut replacement: Option<&mut Build> = None;
+            // maybe less than needed, maybe overkill. I don't really know
+            let mut to_remove = Vec::with_capacity(20);
+
+            for (key, old_build) in builds.iter_mut().enumerate() {
+                let mut old_has_better_none = false;
+                let mut new_has_better_none = false;
+                // don't want to use .iter() because it will give &&Option<>
+                // and don't want to use [build.helmet, build.chest, ...].iter() because it will copy
+                // the elements (they don't even implement the Copy trait)
+                for couple in array::IntoIter::new([
+                    &build.helmet,
+                    &build.chest,
+                    &build.arm,
+                    &build.waist,
+                    &build.leg,
+                ])
+                .zip(array::IntoIter::new([
+                    &old_build.helmet,
+                    &old_build.chest,
+                    &old_build.arm,
+                    &old_build.waist,
+                    &old_build.leg,
+                ])) {
+                    match couple {
+                        (None, Some(_)) => {
+                            new_has_better_none = true;
+                            if old_has_better_none {
+                                // if they have None at different places
+                                break;
+                            }
+                        }
+                        (Some(_), None) => {
+                            old_has_better_none = true;
+                            if new_has_better_none {
+                                break;
+                            }
+                        }
+                        (Some(part), Some(old_part)) if part.0 != old_part.0 => {
+                            // they are not comparable
+                            old_has_better_none = new_has_better_none;
+                            break;
+                        }
+                        _ => {}
+                    };
+                }
+
+                if old_has_better_none != new_has_better_none {
+                    push_it = false;
+                    if old_has_better_none {
+                        break;
+                    }
+                    // have to move this reference
+                    // out of the loop to please the
+                    // compiler
+                    if replacement.is_none() {
+                        replacement = Some(old_build);
+                    } else {
+                        // We continue to search builds worse
+                        // than the new part (yes this is possible)
+                        to_remove.push(key);
+                    }
+                }
+            }
+            if let Some(place) = replacement {
+                *place = build;
+            } else if push_it {
+                builds.push(build);
+            }
+            to_remove.sort_unstable();
+
+            // thank you https://stackoverflow.com/a/57948703
+            for index in to_remove.drain(..).rev() {
+                builds.swap_remove(index);
+            }
+        }
     }
+
     builds
 }
 
