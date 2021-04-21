@@ -2,7 +2,7 @@ use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs::File};
 
-#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub enum Gender {
     Female,
     Male,

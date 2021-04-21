@@ -3,12 +3,12 @@ use std::{array, cmp::Ordering};
 use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
 use crate::{
-    armor_ron::{get_armor_list, get_talismans, Armor, Skill, Gender},
+    armor_ron::{get_armor_list, get_talismans, Armor, Gender, Skill},
     build_search::Jewels,
 };
 use iced::{
     button, pick_list, scrollable, slider, text_input, Align, Button, Column, Container, Element,
-    Length, PickList, Row, Rule, Sandbox, Scrollable, Slider, Space, Text, TextInput,
+    Length, PickList, Radio, Row, Rule, Sandbox, Scrollable, Slider, Space, Text, TextInput,
 };
 
 struct WishField {
@@ -68,6 +68,8 @@ pub struct MainApp {
     armor_desc: Option<(Armor, [Option<Skill>; 3])>,
 
     page: Page,
+
+    selected_gender: Gender,
 }
 
 enum Page {
@@ -91,6 +93,7 @@ pub enum Message {
     ArmorDesc(Option<(Armor, [Option<Skill>; 3])>),
     FilterChanged(String),
     ToggleTalisman,
+    GenderChanged(Gender),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -107,13 +110,17 @@ impl Sandbox for MainApp {
     fn new() -> Self {
         Self {
             wish_fields: vec![WishField::default()],
+
             waists: get_armor_list(WAISTS_PATH),
             helmets: get_armor_list(HELMETS_PATH),
             arms: get_armor_list(ARMS_PATH),
             legs: get_armor_list(LEGS_PATH),
             chests: get_armor_list(CHESTS_PATH),
             talismans: get_talismans(TALISMANS_PATH),
+
             wish_choices: Skill::ALL.to_vec(),
+
+            selected_gender: Gender::Female,
 
             ..Self::default()
         }
@@ -148,7 +155,7 @@ impl Sandbox for MainApp {
                     &self.waists,
                     &self.legs,
                     &self.talismans,
-                    Gender::Male
+                    self.selected_gender,
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
@@ -170,6 +177,7 @@ impl Sandbox for MainApp {
                 Page::Main => self.page = Page::Talisman,
                 _ => self.page = Page::Main,
             },
+            Message::GenderChanged(gender) => self.selected_gender = gender,
         }
     }
 
@@ -236,6 +244,7 @@ impl Sandbox for MainApp {
                     row = row.push(slider).push(text).push(remove_button);
                     scrollable_wishes = scrollable_wishes.push(row);
                 }
+
                 let filter_text_input = TextInput::new(
                     &mut self.state_filter_text_input,
                     "Skill filter",
@@ -243,7 +252,24 @@ impl Sandbox for MainApp {
                     Message::FilterChanged,
                 )
                 .padding(5)
-                .width(Length::Units(200));
+                .width(Length::Units(150));
+
+                let row_gender_radio_and_filter = Row::new()
+                    .spacing(5)
+                    .push(Radio::new(
+                        Gender::Female,
+                        "Female",
+                        Some(self.selected_gender),
+                        Message::GenderChanged,
+                    ))
+                    .push(Radio::new(
+                        Gender::Male,
+                        "Male",
+                        Some(self.selected_gender),
+                        Message::GenderChanged,
+                    ))
+                    .push(Space::new(Length::Units(20), Length::Shrink))
+                    .push(filter_text_input);
 
                 let add_wish_button =
                     Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
@@ -267,7 +293,7 @@ impl Sandbox for MainApp {
                 Column::new()
                     .spacing(10)
                     .push(buttons)
-                    .push(filter_text_input)
+                    .push(row_gender_radio_and_filter)
                     .push(scrollable_wishes.height(Length::FillPortion(2)))
                     .push(
                         Scrollable::new(&mut self.state_desc_scroll)
