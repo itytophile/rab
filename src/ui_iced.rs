@@ -70,6 +70,8 @@ pub struct MainApp {
     page: Page,
 
     selected_gender: Gender,
+
+    states_values_slider_weapon_slot: [(slider::State, u8); 3],
 }
 
 enum Page {
@@ -94,6 +96,7 @@ pub enum Message {
     FilterChanged(String),
     ToggleTalisman,
     GenderChanged(Gender),
+    WeaponSlotChanged(usize, u8),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -178,6 +181,9 @@ impl Sandbox for MainApp {
                 _ => self.page = Page::Main,
             },
             Message::GenderChanged(gender) => self.selected_gender = gender,
+            Message::WeaponSlotChanged(index, value) => {
+                self.states_values_slider_weapon_slot[index].1 = value
+            }
         }
     }
 
@@ -290,6 +296,18 @@ impl Sandbox for MainApp {
                     .push(add_wish_button)
                     .push(talisman_button)
                     .push(search_button);
+
+                let mut sliders_weapon_slot = Row::new().spacing(5).push(Text::new("Weapon slots"));
+                for (index, (state, value)) in
+                    self.states_values_slider_weapon_slot.iter_mut().enumerate()
+                {
+                    sliders_weapon_slot = sliders_weapon_slot
+                        .push(Slider::new(state, 0..=3, *value, move |v| {
+                            Message::WeaponSlotChanged(index, v)
+                        }))
+                        .push(Text::new(value.to_string()))
+                }
+
                 Column::new()
                     .spacing(10)
                     .push(buttons)
@@ -301,6 +319,8 @@ impl Sandbox for MainApp {
                             .align_items(Align::Center)
                             .height(Length::FillPortion(3)),
                     )
+                    .push(Space::new(Length::Shrink, Length::Fill))
+                    .push(sliders_weapon_slot)
             }
             Page::Talisman => {
                 let back_button = Button::new(

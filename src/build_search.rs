@@ -44,6 +44,8 @@ fn brute_force_search_builds(
     {
         let (helmet, chest, arm, waist, leg, talisman) = (v[0], v[1], v[2], v[3], v[4], v[5]);
 
+        // We remove from the wishes the skills that are already present
+        // in the armor. Then we know what are the jewels to set.
         let mut delta_wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
         for &option in &[helmet, chest, arm, waist, leg, talisman] {
             if let Some(armor) = option {
@@ -60,7 +62,9 @@ fn brute_force_search_builds(
                 }
             }
         }
-        //reverse order
+        // reverse order sort
+        // We will place the bigger jewels first to be sure to not
+        // spoil big slots with little jewels
         delta_wishes.sort_unstable_by(|(skill_a, _), (skill_b, _)| {
             let jewel_size_a = skill_a.get_jewel_size();
             let jewel_size_b = skill_b.get_jewel_size();
@@ -108,6 +112,8 @@ fn brute_force_search_builds(
                                 jewels[*index] = Some(*skill);
                                 *index += 1;
                                 if *amount == 0 {
+                                    // the wish is satisfied so we can
+                                    // skip to the next wish
                                     continue 'wish_loop;
                                 }
                             }
