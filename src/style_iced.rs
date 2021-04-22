@@ -64,6 +64,7 @@ pub enum Button {
     Result,
     Talisman,
     Edit,
+    Save,
 }
 
 impl button::StyleSheet for Button {
@@ -102,6 +103,11 @@ impl button::StyleSheet for Button {
             Button::Edit => button::Style {
                 background: Some(Background::Color(Color::from_rgb(1., 0.88, 0.54))),
                 text_color: Color::BLACK,
+                ..button::Style::default()
+            },
+            Button::Save => button::Style {
+                background: Some(Background::Color(Color::from_rgb(0.28, 0.78, 0.56))),
+                text_color: Color::WHITE,
                 ..button::Style::default()
             },
         }

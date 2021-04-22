@@ -46,7 +46,7 @@ pub struct MainApp {
     state_filter_text_input: text_input::State,
     value_filter_text_input: String,
 
-    wish_choices: Vec<Skill>,
+    filtered_wish_choices: Vec<Skill>,
 
     helmets: Vec<Armor>,
     chests: Vec<Armor>,
@@ -83,6 +83,15 @@ pub struct MainApp {
     state_talisman_desc_scroll: scrollable::State,
 
     state_edit_button: button::State,
+
+    is_editing: bool,
+
+    states_values_slider_talisman_slot: [(slider::State, u8); 3],
+    state_edit_text_input: text_input::State,
+    value_edit_text_input: String,
+
+    edit_wish_fields: Vec<WishField>,
+    state_edit_add_skill_button: button::State,
 }
 
 enum Page {
@@ -110,7 +119,14 @@ pub enum Message {
     WeaponSlotChanged(usize, u8),
     ViewWeaponJewel(Jewels),
     SelectTalisman(Option<usize>),
-    EditTalisman(usize),
+    EditTalisman,
+    SaveEdition,
+    TalismanSlotChanged(usize, u8),
+    EditTalismanName(String),
+    EditSkillSelected(usize, Skill),
+    EditAddSkill,
+    EditRemoveSkill(usize),
+    EditSkillSliderChanged(usize, u8),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -124,6 +140,9 @@ const TALISMANS_PATH: &str = "talismans.ron";
 const HEIGHT_BIG_BUTTON: u16 = 60;
 const BUTTON_SPACING: u16 = 10;
 const COLUMN_SPACING: u16 = 10;
+const FILTER_INPUT_WIDTH: u16 = 150;
+const SCROLL_PADDING: u16 = 20;
+const LEFT_COLUMN_WIDTH: u16 = 470;
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -142,7 +161,7 @@ impl Sandbox for MainApp {
             talismans,
             states_talisman_button,
 
-            wish_choices: Skill::ALL.to_vec(),
+            filtered_wish_choices: Skill::ALL.to_vec(),
 
             selected_gender: Gender::Female,
 
@@ -192,7 +211,7 @@ impl Sandbox for MainApp {
             Message::ArmorDesc(option) => self.armor_desc = option,
             Message::FilterChanged(text) => {
                 self.value_filter_text_input = text;
-                self.wish_choices = Skill::ALL
+                self.filtered_wish_choices = Skill::ALL
                     .iter()
                     .copied()
                     .filter(|skill| {
@@ -214,7 +233,50 @@ impl Sandbox for MainApp {
 
             Message::ViewWeaponJewel(jewels) => self.selected_weapon_jewels = jewels,
             Message::SelectTalisman(index) => self.selected_talisman = index,
-            Message::EditTalisman(_) => {}
+            Message::EditTalisman => {
+                self.is_editing = true;
+                let talisman = &self.talismans[self.selected_talisman.unwrap()];
+                // We provide the actual talisman's data to the edit form
+                self.value_edit_text_input = talisman.name.clone();
+
+                for &(skill, amount) in talisman.skills.iter() {
+                    self.edit_wish_fields.push(WishField {
+                        selected: skill,
+                        value_slider: amount,
+                        ..Default::default()
+                    })
+                }
+
+                for (slot, (_, slider_value)) in talisman
+                    .slots
+                    .iter()
+                    .zip(self.states_values_slider_talisman_slot.iter_mut())
+                {
+                    *slider_value = *slot;
+                }
+            }
+            Message::SaveEdition => {
+                self.is_editing = false;
+                for (_, slider_value) in self.states_values_slider_talisman_slot.iter_mut() {
+                    *slider_value = 0
+                }
+                self.edit_wish_fields.clear();
+            }
+            Message::TalismanSlotChanged(index, value) => {
+                self.states_values_slider_talisman_slot[index].1 = value
+            }
+            Message::EditTalismanName(name) => self.value_edit_text_input = name,
+            Message::EditSkillSelected(key, wish) => {
+                self.edit_wish_fields[key].selected = wish;
+                self.edit_wish_fields[key].value_slider = 1
+            }
+            Message::EditAddSkill => self.edit_wish_fields.push(WishField::default()),
+            Message::EditRemoveSkill(index) => {
+                self.edit_wish_fields.remove(index);
+            }
+            Message::EditSkillSliderChanged(index, value) => {
+                self.edit_wish_fields[index].value_slider = value
+            }
         }
     }
 
@@ -222,7 +284,7 @@ impl Sandbox for MainApp {
         let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
             .align_items(Align::Center)
             .spacing(10)
-            .padding(20);
+            .padding(SCROLL_PADDING);
         let size = self.builds.len();
         if size == 0 {
             builds_scrolls = builds_scrolls.push(Text::new("No Result"));
@@ -235,7 +297,7 @@ impl Sandbox for MainApp {
             {
                 let mut weapon_button = Button::new(
                     &mut state_button.6,
-                    Text::new("i")
+                    Text::new("?")
                         .vertical_alignment(VerticalAlignment::Center)
                         .horizontal_alignment(HorizontalAlignment::Center),
                 )
@@ -264,42 +326,26 @@ impl Sandbox for MainApp {
         let column_left = match self.page {
             Page::Main => {
                 let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
-                    .padding(20)
+                    .padding(SCROLL_PADDING)
                     .spacing(10)
                     .align_items(Align::Center);
                 let size = self.wish_fields.len();
                 for (key, wish_field) in self.wish_fields.iter_mut().enumerate() {
-                    let pick_list = PickList::new(
-                        &mut wish_field.state_pick_list,
-                        &self.wish_choices,
-                        Some(wish_field.selected),
+                    scrollable_wishes = scrollable_wishes.push(get_wishfield_row(
+                        wish_field,
+                        &self.filtered_wish_choices,
+                        size <= 1,
+                        Message::RemoveWish(key),
                         move |w| Message::WishSelected(key, w),
-                    )
-                    .width(Length::Units(200));
-                    let mut row = Row::new().spacing(10).push(pick_list);
-                    let mut remove_button =
-                        Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
-                            .style(style_iced::Button::Remove);
-                    if size > 1 {
-                        remove_button = remove_button.on_press(Message::RemoveWish(key));
-                    }
-                    let slider = Slider::new(
-                        &mut wish_field.state_slider,
-                        1..=wish_field.selected.get_limit(),
-                        wish_field.value_slider,
                         move |value| Message::SliderChanged(key, value),
-                    )
-                    .width(Length::Units(100));
-                    let text = Text::new(format!("{}", wish_field.value_slider));
-                    row = row.push(slider).push(text).push(remove_button);
-                    scrollable_wishes = scrollable_wishes.push(row);
+                    ));
                 }
 
                 let filter_text_input = get_skill_filter(
                     &mut self.state_filter_text_input,
                     &self.value_filter_text_input,
                 )
-                .width(Length::Units(150));
+                .width(Length::Units(FILTER_INPUT_WIDTH));
 
                 let row_gender_radio_and_filter = Row::new()
                     .spacing(5)
@@ -402,14 +448,9 @@ impl Sandbox for MainApp {
                     .push(add_talisman_button)
                     .push(back_button);
 
-                let filter_text_input = get_skill_filter(
-                    &mut self.state_filter_text_input,
-                    &self.value_filter_text_input,
-                );
-
                 let mut talisman_scroll = Scrollable::new(&mut self.state_talisman_scroll)
                     .align_items(Align::Center)
-                    .padding(20)
+                    .padding(SCROLL_PADDING)
                     .spacing(10);
 
                 for (index, (talisman, state_button)) in self
@@ -418,47 +459,77 @@ impl Sandbox for MainApp {
                     .zip(self.states_talisman_button.iter_mut())
                     .enumerate()
                 {
-                    talisman_scroll = talisman_scroll.push(
-                        Button::new(state_button, Text::new(&talisman.name))
-                            .style(style_iced::Button::Result)
-                            .on_press(Message::SelectTalisman(Some(index))),
-                    );
+                    let mut button = Button::new(state_button, Text::new(&talisman.name))
+                        .style(style_iced::Button::Result);
+                    if !self.is_editing {
+                        button = button.on_press(Message::SelectTalisman(Some(index)));
+                    }
+                    talisman_scroll = talisman_scroll.push(button);
                 }
 
                 let mut column = Column::new()
                     .spacing(COLUMN_SPACING)
                     .push(row_buttons)
-                    .push(filter_text_input)
                     .push(talisman_scroll.height(Length::FillPortion(2)));
 
                 if let Some(index) = &self.selected_talisman {
-                    let talisman_desc = talisman_to_element(
-                        &self.talismans[*index],
-                        &mut self.state_talisman_desc_scroll,
-                    );
+                    let view = if self.is_editing {
+                        Column::new()
+                            .align_items(Align::Center)
+                            .push(
+                                Container::new(get_talisman_editor(
+                                    &mut self.state_talisman_desc_scroll,
+                                    &mut self.states_values_slider_talisman_slot,
+                                    &mut self.state_edit_text_input,
+                                    &self.value_edit_text_input,
+                                    &mut self.edit_wish_fields,
+                                    &self.filtered_wish_choices,
+                                    &mut self.state_filter_text_input,
+                                    &self.value_filter_text_input,
+                                    &mut self.state_edit_add_skill_button,
+                                ))
+                                .padding(10)
+                                .style(style_iced::Container::Talisman)
+                                .max_height(350),
+                            )
+                            .push(
+                                Button::new(
+                                    &mut self.state_edit_button, // cheating
+                                    Container::new(Text::new("Save"))
+                                        .center_x()
+                                        .width(Length::Units(100)),
+                                )
+                                .style(style_iced::Button::Save)
+                                .on_press(Message::SaveEdition),
+                            )
+                    } else {
+                        let talisman_desc = talisman_to_element(
+                            &self.talismans[*index],
+                            &mut self.state_talisman_desc_scroll,
+                        );
+                        Column::new()
+                            .align_items(Align::Center)
+                            .push(
+                                Container::new(talisman_desc)
+                                    .padding(10)
+                                    .style(style_iced::Container::Talisman),
+                            )
+                            .push(
+                                Button::new(
+                                    &mut self.state_edit_button,
+                                    Container::new(Text::new("Edit"))
+                                        .center_x()
+                                        .width(Length::Units(100)),
+                                )
+                                .style(style_iced::Button::Edit)
+                                .on_press(Message::EditTalisman),
+                            )
+                    };
 
                     column = column.push(
-                        Container::new(
-                            Column::new()
-                                .align_items(Align::Center)
-                                .push(
-                                    Container::new(talisman_desc)
-                                        .padding(10)
-                                        .style(style_iced::Container::Talisman),
-                                )
-                                .push(
-                                    Button::new(
-                                        &mut self.state_edit_button,
-                                        Container::new(Text::new("Edit"))
-                                            .center_x()
-                                            .width(Length::Units(100)),
-                                    )
-                                    .style(style_iced::Button::Edit)
-                                    .on_press(Message::EditTalisman(*index)),
-                                ),
-                        )
-                        .center_x()
-                        .height(Length::FillPortion(3)),
+                        Container::new(view)
+                            .center_x()
+                            .height(Length::FillPortion(3)),
                     );
                 }
 
@@ -486,10 +557,46 @@ impl Sandbox for MainApp {
 
         Row::new()
             .padding(5)
-            .push(column_left.width(Length::Units(450)))
+            .push(column_left.width(Length::Units(LEFT_COLUMN_WIDTH)))
             .push(column_right)
             .into()
     }
+}
+
+fn get_wishfield_row<'a>(
+    wish_field: &'a mut WishField,
+    skill_list: &'a [Skill],
+    disable_remove_button: bool,
+    on_remove: Message,
+    on_skill_selected: impl Fn(Skill) -> Message + 'static,
+    on_slider_changed: impl Fn(u8) -> Message + 'static,
+) -> Row<'a, Message> {
+    let pick_list = PickList::new(
+        &mut wish_field.state_pick_list,
+        skill_list,
+        Some(wish_field.selected),
+        on_skill_selected,
+    )
+    .width(Length::Units(200));
+    let mut remove_button = Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
+        .style(style_iced::Button::Remove);
+    if !disable_remove_button {
+        remove_button = remove_button.on_press(on_remove);
+    }
+    let slider = Slider::new(
+        &mut wish_field.state_slider,
+        1..=wish_field.selected.get_limit(),
+        wish_field.value_slider,
+        on_slider_changed,
+    )
+    .width(Length::Units(100));
+    let text = Text::new(format!("{}", wish_field.value_slider));
+    Row::new()
+        .spacing(10)
+        .push(pick_list)
+        .push(slider)
+        .push(text)
+        .push(remove_button)
 }
 
 fn get_skill_filter<'a>(state: &'a mut text_input::State, value: &str) -> TextInput<'a, Message> {
@@ -520,6 +627,70 @@ fn build_part_to_button<'a>(
     } else {
         button.on_press(Message::ArmorDesc(build_part.clone()))
     }
+}
+
+fn get_talisman_editor<'a>(
+    state_scroll: &'a mut scrollable::State,
+    states_values_slider_talisman_slot: &'a mut [(slider::State, u8)],
+    state_text_input: &'a mut text_input::State,
+    value_text_input: &str,
+    wish_fields: &'a mut [WishField],
+    skill_list: &'a [Skill],
+    state_filter_text_input: &'a mut text_input::State,
+    value_filter_text_input: &'a str,
+    state_add_button: &'a mut button::State,
+) -> Scrollable<'a, Message> {
+    let text_input = TextInput::new(
+        state_text_input,
+        "New talisman name",
+        value_text_input,
+        Message::EditTalismanName,
+    )
+    .padding(5)
+    .width(Length::Units(150));
+
+    let filter_text_input = get_skill_filter(state_filter_text_input, value_filter_text_input)
+        .width(Length::Units(FILTER_INPUT_WIDTH));
+
+    let row = Row::new()
+        .spacing(10)
+        .push(
+            Button::new(state_add_button, Text::new("Add skill"))
+                .on_press(Message::EditAddSkill)
+                .style(style_iced::Button::Add),
+        )
+        .push(filter_text_input);
+
+    let mut scroll = Scrollable::new(state_scroll)
+        .spacing(COLUMN_SPACING)
+        .padding(SCROLL_PADDING)
+        .align_items(Align::Center)
+        .push(text_input)
+        .push(row);
+
+    for (index, wish_fields) in wish_fields.iter_mut().enumerate() {
+        scroll = scroll.push(get_wishfield_row(
+            wish_fields,
+            skill_list,
+            false,
+            Message::EditRemoveSkill(index),
+            move |skill| Message::EditSkillSelected(index, skill),
+            move |v| Message::EditSkillSliderChanged(index, v),
+        ));
+    }
+
+    let mut sliders_slot = Row::new().spacing(5).push(Text::new("Slots"));
+    for (index, (state, value)) in states_values_slider_talisman_slot.iter_mut().enumerate() {
+        sliders_slot = sliders_slot
+            .push(
+                Slider::new(state, 0..=3, *value, move |v| {
+                    Message::TalismanSlotChanged(index, v)
+                })
+                .width(Length::Units(40)),
+            )
+            .push(Text::new(value.to_string()))
+    }
+    scroll.push(sliders_slot)
 }
 
 fn talisman_to_element<'a>(
