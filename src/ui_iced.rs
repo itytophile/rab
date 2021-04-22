@@ -79,6 +79,10 @@ pub struct MainApp {
     selected_weapon_jewels: Jewels,
 
     state_talisman_scroll: scrollable::State,
+    selected_talisman: Option<usize>,
+    state_talisman_desc_scroll: scrollable::State,
+
+    state_edit_button: button::State,
 }
 
 enum Page {
@@ -105,6 +109,8 @@ pub enum Message {
     GenderChanged(Gender),
     WeaponSlotChanged(usize, u8),
     ViewWeaponJewel(Jewels),
+    SelectTalisman(Option<usize>),
+    EditTalisman(usize),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -117,6 +123,7 @@ const TALISMANS_PATH: &str = "talismans.ron";
 
 const HEIGHT_BIG_BUTTON: u16 = 60;
 const BUTTON_SPACING: u16 = 10;
+const COLUMN_SPACING: u16 = 10;
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -206,6 +213,8 @@ impl Sandbox for MainApp {
             }
 
             Message::ViewWeaponJewel(jewels) => self.selected_weapon_jewels = jewels,
+            Message::SelectTalisman(index) => self.selected_talisman = index,
+            Message::EditTalisman(_) => {}
         }
     }
 
@@ -286,13 +295,10 @@ impl Sandbox for MainApp {
                     scrollable_wishes = scrollable_wishes.push(row);
                 }
 
-                let filter_text_input = TextInput::new(
+                let filter_text_input = get_skill_filter(
                     &mut self.state_filter_text_input,
-                    "Skill filter",
                     &self.value_filter_text_input,
-                    Message::FilterChanged,
                 )
-                .padding(5)
                 .width(Length::Units(150));
 
                 let row_gender_radio_and_filter = Row::new()
@@ -309,7 +315,7 @@ impl Sandbox for MainApp {
                         Some(self.selected_gender),
                         Message::GenderChanged,
                     ))
-                    .push(Space::new(Length::Units(20), Length::Shrink))
+                    .push(Space::with_width(Length::Units(20)))
                     .push(filter_text_input);
 
                 let add_wish_button =
@@ -334,7 +340,7 @@ impl Sandbox for MainApp {
 
                 let mut weapon_jewels_row = Row::new()
                     .spacing(5)
-                    .push(Space::new(Length::Units(105), Length::Shrink));
+                    .push(Space::with_width(Length::Units(105)));
 
                 for jewel in self.selected_weapon_jewels.iter() {
                     if let Some(jewel) = jewel {
@@ -345,8 +351,7 @@ impl Sandbox for MainApp {
                                 .width(Length::Fill),
                         )
                     } else {
-                        weapon_jewels_row =
-                            weapon_jewels_row.push(Space::new(Length::Fill, Length::Shrink))
+                        weapon_jewels_row = weapon_jewels_row.push(Space::with_width(Length::Fill))
                     }
                 }
 
@@ -364,7 +369,7 @@ impl Sandbox for MainApp {
                 }
 
                 Column::new()
-                    .spacing(10)
+                    .spacing(COLUMN_SPACING)
                     .push(buttons)
                     .push(row_gender_radio_and_filter)
                     .push(scrollable_wishes.height(Length::FillPortion(2)))
@@ -374,7 +379,7 @@ impl Sandbox for MainApp {
                             .align_items(Align::Center)
                             .height(Length::FillPortion(3)),
                     )
-                    .push(Space::new(Length::Shrink, Length::Fill))
+                    .push(Space::with_height(Length::Fill))
                     .push(weapon_jewels_row)
                     .push(sliders_weapon_slot)
             }
@@ -397,30 +402,74 @@ impl Sandbox for MainApp {
                     .push(add_talisman_button)
                     .push(back_button);
 
-                let mut talisman_column = Scrollable::new(&mut self.state_talisman_scroll)
+                let filter_text_input = get_skill_filter(
+                    &mut self.state_filter_text_input,
+                    &self.value_filter_text_input,
+                );
+
+                let mut talisman_scroll = Scrollable::new(&mut self.state_talisman_scroll)
                     .align_items(Align::Center)
                     .padding(20)
                     .spacing(10);
 
-                for (talisman, state_button) in self
+                for (index, (talisman, state_button)) in self
                     .talismans
                     .iter()
                     .zip(self.states_talisman_button.iter_mut())
+                    .enumerate()
                 {
-                    talisman_column = talisman_column.push(
+                    talisman_scroll = talisman_scroll.push(
                         Button::new(state_button, Text::new(&talisman.name))
-                            .style(style_iced::Button::Result),
+                            .style(style_iced::Button::Result)
+                            .on_press(Message::SelectTalisman(Some(index))),
                     );
                 }
 
-                Column::new().push(row_buttons).push(talisman_column)
+                let mut column = Column::new()
+                    .spacing(COLUMN_SPACING)
+                    .push(row_buttons)
+                    .push(filter_text_input)
+                    .push(talisman_scroll.height(Length::FillPortion(2)));
+
+                if let Some(index) = &self.selected_talisman {
+                    let talisman_desc = talisman_to_element(
+                        &self.talismans[*index],
+                        &mut self.state_talisman_desc_scroll,
+                    );
+
+                    column = column.push(
+                        Container::new(
+                            Column::new()
+                                .align_items(Align::Center)
+                                .push(
+                                    Container::new(talisman_desc)
+                                        .padding(10)
+                                        .style(style_iced::Container::Talisman),
+                                )
+                                .push(
+                                    Button::new(
+                                        &mut self.state_edit_button,
+                                        Container::new(Text::new("Edit"))
+                                            .center_x()
+                                            .width(Length::Units(100)),
+                                    )
+                                    .style(style_iced::Button::Edit)
+                                    .on_press(Message::EditTalisman(*index)),
+                                ),
+                        )
+                        .center_x()
+                        .height(Length::FillPortion(3)),
+                    );
+                }
+
+                column
             }
         }
         .align_items(Align::Center);
 
         let mut col_titles = Row::new()
             .spacing(BUTTON_SPACING)
-            .push(Space::new(Length::Units(20), Length::Shrink));
+            .push(Space::with_width(Length::Units(20)));
 
         for col_name in array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"])
         {
@@ -441,6 +490,10 @@ impl Sandbox for MainApp {
             .push(column_right)
             .into()
     }
+}
+
+fn get_skill_filter<'a>(state: &'a mut text_input::State, value: &str) -> TextInput<'a, Message> {
+    TextInput::new(state, "Skill filter", value, Message::FilterChanged).padding(5)
 }
 
 fn build_part_to_button<'a>(
@@ -467,6 +520,40 @@ fn build_part_to_button<'a>(
     } else {
         button.on_press(Message::ArmorDesc(build_part.clone()))
     }
+}
+
+fn talisman_to_element<'a>(
+    talisman: &Armor,
+    state_scroll: &'a mut scrollable::State,
+) -> Scrollable<'a, Message> {
+    let mut talisman_desc = Scrollable::new(state_scroll)
+        .align_items(Align::Center)
+        .spacing(5)
+        .push(Text::new(&talisman.name));
+
+    for (skill, amount) in talisman.skills.iter() {
+        talisman_desc = talisman_desc.push(
+            Container::new(Text::new(format!("{} x{}", skill, amount)))
+                .width(Length::Units(150))
+                .center_x()
+                .style(style_iced::Container::Fire),
+        )
+    }
+
+    if talisman.skills.len() > 0 && talisman.slots.len() > 0 {
+        talisman_desc = talisman_desc.push(Space::with_height(Length::Units(10)))
+    }
+
+    for slot in talisman.slots.iter() {
+        talisman_desc = talisman_desc.push(
+            Container::new(Text::new(format!("Free lvl {} slot", slot)))
+                .width(Length::Units(170))
+                .center_x()
+                .style(style_iced::Container::Ice),
+        )
+    }
+
+    talisman_desc
 }
 
 fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {

@@ -7,6 +7,7 @@ pub enum Container {
     Water,
     Dragon,
     Defense,
+    Talisman,
 }
 
 impl container::StyleSheet for Container {
@@ -47,6 +48,11 @@ impl container::StyleSheet for Container {
                 background: Some(Background::Color(Color::from_rgb(0.7, 0.7, 0.7))),
                 ..container::Style::default()
             },
+            Container::Talisman => container::Style {
+                border_radius: 10.0,
+                background: Some(Background::Color(Color::from_rgb(0.95, 0.95, 0.95))),
+                ..container::Style::default()
+            },
         }
     }
 }
@@ -57,6 +63,7 @@ pub enum Button {
     Search,
     Result,
     Talisman,
+    Edit,
 }
 
 impl button::StyleSheet for Button {
@@ -90,6 +97,11 @@ impl button::StyleSheet for Button {
                 background: Some(Background::Color(Color::from_rgb(0.24, 0.56, 0.82))),
                 border_radius: 5.0,
                 text_color: Color::WHITE,
+                ..button::Style::default()
+            },
+            Button::Edit => button::Style {
+                background: Some(Background::Color(Color::from_rgb(1., 0.88, 0.54))),
+                text_color: Color::BLACK,
                 ..button::Style::default()
             },
         }
