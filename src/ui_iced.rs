@@ -55,6 +55,7 @@ pub struct MainApp {
     legs: Vec<Armor>,
 
     talismans: Vec<Armor>,
+    states_talisman_button: Vec<button::State>,
 
     builds: Vec<Build>,
     states_build_button: Vec<(
@@ -63,7 +64,7 @@ pub struct MainApp {
         button::State,
         button::State,
         button::State,
-        button::State,
+        button::State, //talisman
         button::State, //weapon
     )>,
 
@@ -76,6 +77,8 @@ pub struct MainApp {
     states_values_slider_weapon_slot: [(slider::State, u8); 3],
 
     selected_weapon_jewels: Jewels,
+
+    state_talisman_scroll: scrollable::State,
 }
 
 enum Page {
@@ -113,11 +116,14 @@ const CHESTS_PATH: &str = "armors/chests.ron";
 const TALISMANS_PATH: &str = "talismans.ron";
 
 const HEIGHT_BIG_BUTTON: u16 = 60;
+const BUTTON_SPACING: u16 = 10;
 
 impl Sandbox for MainApp {
     type Message = Message;
 
     fn new() -> Self {
+        let talismans = get_talismans(TALISMANS_PATH);
+        let states_talisman_button = vec![Default::default(); talismans.len()];
         Self {
             wish_fields: vec![WishField::default()],
 
@@ -126,7 +132,8 @@ impl Sandbox for MainApp {
             arms: get_armor_list(ARMS_PATH),
             legs: get_armor_list(LEGS_PATH),
             chests: get_armor_list(CHESTS_PATH),
-            talismans: get_talismans(TALISMANS_PATH),
+            talismans,
+            states_talisman_button,
 
             wish_choices: Skill::ALL.to_vec(),
 
@@ -157,6 +164,7 @@ impl Sandbox for MainApp {
                     .iter()
                     .map(|wish| (wish.selected, wish.value_slider))
                     .collect();
+                self.selected_weapon_jewels = Default::default();
                 self.builds = pre_selection_then_brute_force_search(
                     &wishes,
                     &self.helmets,
@@ -229,7 +237,7 @@ impl Sandbox for MainApp {
                 }
                 let row_build = Row::new()
                     .align_items(Align::Center)
-                    .spacing(10)
+                    .spacing(BUTTON_SPACING)
                     .push(weapon_button.width(Length::Units(20)))
                     .push(build_part_to_button(&mut state_button.0, &build.helmet))
                     .push(build_part_to_button(&mut state_button.1, &build.chest))
@@ -319,7 +327,7 @@ impl Sandbox for MainApp {
                         .style(style_iced::Button::Search)
                         .on_press(Message::Search);
                 let buttons = Row::new()
-                    .spacing(10)
+                    .spacing(BUTTON_SPACING)
                     .push(add_wish_button)
                     .push(talisman_button)
                     .push(search_button);
@@ -380,18 +388,39 @@ impl Sandbox for MainApp {
                 .style(style_iced::Button::Talisman)
                 .on_press(Message::ToggleTalisman);
 
-                let mut talisman_column = Column::new();
+                let add_talisman_button =
+                    Button::new(&mut self.state_add_wish_button, Text::new("Add talisman"))
+                        .style(style_iced::Button::Add);
 
-                for talisman in self.talismans.iter() {
-                    talisman_column = talisman_column.push(Text::new(&talisman.name));
+                let row_buttons = Row::new()
+                    .spacing(BUTTON_SPACING)
+                    .push(add_talisman_button)
+                    .push(back_button);
+
+                let mut talisman_column = Scrollable::new(&mut self.state_talisman_scroll)
+                    .align_items(Align::Center)
+                    .padding(20)
+                    .spacing(10);
+
+                for (talisman, state_button) in self
+                    .talismans
+                    .iter()
+                    .zip(self.states_talisman_button.iter_mut())
+                {
+                    talisman_column = talisman_column.push(
+                        Button::new(state_button, Text::new(&talisman.name))
+                            .style(style_iced::Button::Result),
+                    );
                 }
 
-                Column::new().push(back_button).push(talisman_column)
+                Column::new().push(row_buttons).push(talisman_column)
             }
         }
         .align_items(Align::Center);
 
-        let mut col_titles = Row::new().push(Space::new(Length::Units(20), Length::Shrink));
+        let mut col_titles = Row::new()
+            .spacing(BUTTON_SPACING)
+            .push(Space::new(Length::Units(20), Length::Shrink));
 
         for col_name in array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"])
         {
