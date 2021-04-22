@@ -18,6 +18,7 @@ pub struct Build {
     pub waist: Option<(Armor, Jewels)>,
     pub leg: Option<(Armor, Jewels)>,
     pub talisman: Option<(Armor, Jewels)>,
+    pub weapon_jewels: Jewels
 }
 
 fn optionify_slice_and_add_none<T>(slice: &[T]) -> Vec<Option<&T>> {
@@ -36,8 +37,10 @@ fn brute_force_search_builds(
     waists: &[Armor],
     legs: &[Armor],
     talismans: &[Armor],
+    weapon_slots: [u8; 3],
 ) -> Vec<Build> {
     let mut builds: Vec<Build> = Vec::with_capacity(500);
+    
     for v in array::IntoIter::new([helmets, chests, arms, waists, legs, talismans])
         .map(optionify_slice_and_add_none)
         .multi_cartesian_product()
@@ -84,7 +87,7 @@ fn brute_force_search_builds(
             }
         });
 
-        const NB_PARTS: usize = 6;
+        const NB_PARTS: usize = 7;
 
         let mut possible_jewels_for_each_part = [Jewels::default(); NB_PARTS];
         let mut jewel_indices = [0; NB_PARTS];
@@ -95,6 +98,7 @@ fn brute_force_search_builds(
             extract_slots_copy(&waist),
             extract_slots_copy(&leg),
             extract_slots_copy(&talisman),
+            weapon_slots
         ];
 
         'wish_loop: for (skill, amount) in delta_wishes.iter_mut() {
@@ -117,13 +121,17 @@ fn brute_force_search_builds(
                                     continue 'wish_loop;
                                 }
                             }
+                        } else {
+                            // We have a skill without a jewel (like Critical Boost)
+                            // rip in peace
+                            break 'wish_loop;
                         }
                     }
                 }
             }
         }
 
-        if delta_wishes.iter().map(|&(_, u8)| u8).sum::<u8>() == 0 {
+        if delta_wishes.iter().all(|(_, amount)| *amount == 0) {
             let build = Build {
                 helmet: match helmet {
                     None => None,
@@ -149,6 +157,7 @@ fn brute_force_search_builds(
                     None => None,
                     Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[5])),
                 },
+                weapon_jewels: possible_jewels_for_each_part[6]
             };
 
             // Avoid having redondant builds like:
@@ -263,7 +272,8 @@ pub fn pre_selection_then_brute_force_search(
     waists: &[Armor],
     legs: &[Armor],
     talismans: &[Armor],
-    gender: Gender
+    gender: Gender,
+    weapon_slots: [u8; 3],
 ) -> Vec<Build> {
     brute_force_search_builds(
         wishes,
@@ -273,6 +283,7 @@ pub fn pre_selection_then_brute_force_search(
         &search_best_candidates(wishes, waists, gender),
         &search_best_candidates(wishes, legs, gender),
         &search_best_candidates(wishes, talismans, gender),
+        weapon_slots,
     )
 }
 

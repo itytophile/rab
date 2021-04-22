@@ -8,7 +8,8 @@ use crate::{
 };
 use iced::{
     button, pick_list, scrollable, slider, text_input, Align, Button, Column, Container, Element,
-    Length, PickList, Radio, Row, Rule, Sandbox, Scrollable, Slider, Space, Text, TextInput,
+    HorizontalAlignment, Length, PickList, Radio, Row, Rule, Sandbox, Scrollable, Slider, Space,
+    Text, TextInput, VerticalAlignment,
 };
 
 struct WishField {
@@ -63,6 +64,7 @@ pub struct MainApp {
         button::State,
         button::State,
         button::State,
+        button::State, //weapon
     )>,
 
     armor_desc: Option<(Armor, [Option<Skill>; 3])>,
@@ -72,6 +74,8 @@ pub struct MainApp {
     selected_gender: Gender,
 
     states_values_slider_weapon_slot: [(slider::State, u8); 3],
+
+    selected_weapon_jewels: Jewels,
 }
 
 enum Page {
@@ -97,6 +101,7 @@ pub enum Message {
     ToggleTalisman,
     GenderChanged(Gender),
     WeaponSlotChanged(usize, u8),
+    ViewWeaponJewel(Jewels),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -106,6 +111,8 @@ const LEGS_PATH: &str = "armors/legs.ron";
 const CHESTS_PATH: &str = "armors/chests.ron";
 
 const TALISMANS_PATH: &str = "talismans.ron";
+
+const HEIGHT_BIG_BUTTON: u16 = 60;
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -159,6 +166,11 @@ impl Sandbox for MainApp {
                     &self.legs,
                     &self.talismans,
                     self.selected_gender,
+                    [
+                        self.states_values_slider_weapon_slot[0].1,
+                        self.states_values_slider_weapon_slot[1].1,
+                        self.states_values_slider_weapon_slot[2].1,
+                    ],
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
@@ -184,6 +196,8 @@ impl Sandbox for MainApp {
             Message::WeaponSlotChanged(index, value) => {
                 self.states_values_slider_weapon_slot[index].1 = value
             }
+
+            Message::ViewWeaponJewel(jewels) => self.selected_weapon_jewels = jewels,
         }
     }
 
@@ -202,8 +216,21 @@ impl Sandbox for MainApp {
                 .enumerate()
                 .zip(self.states_build_button.iter_mut())
             {
+                let mut weapon_button = Button::new(
+                    &mut state_button.6,
+                    Text::new("i")
+                        .vertical_alignment(VerticalAlignment::Center)
+                        .horizontal_alignment(HorizontalAlignment::Center),
+                )
+                .style(style_iced::Button::Talisman);
+                if build.weapon_jewels.iter().any(Option::is_some) {
+                    weapon_button =
+                        weapon_button.on_press(Message::ViewWeaponJewel(build.weapon_jewels));
+                }
                 let row_build = Row::new()
+                    .align_items(Align::Center)
                     .spacing(10)
+                    .push(weapon_button.width(Length::Units(20)))
                     .push(build_part_to_button(&mut state_button.0, &build.helmet))
                     .push(build_part_to_button(&mut state_button.1, &build.chest))
                     .push(build_part_to_button(&mut state_button.2, &build.arm))
@@ -297,7 +324,27 @@ impl Sandbox for MainApp {
                     .push(talisman_button)
                     .push(search_button);
 
-                let mut sliders_weapon_slot = Row::new().spacing(5).push(Text::new("Weapon slots"));
+                let mut weapon_jewels_row = Row::new()
+                    .spacing(5)
+                    .push(Space::new(Length::Units(105), Length::Shrink));
+
+                for jewel in self.selected_weapon_jewels.iter() {
+                    if let Some(jewel) = jewel {
+                        weapon_jewels_row = weapon_jewels_row.push(
+                            Container::new(Text::new(jewel.to_string()))
+                                .center_x()
+                                .style(style_iced::Container::Ice)
+                                .width(Length::Fill),
+                        )
+                    } else {
+                        weapon_jewels_row =
+                            weapon_jewels_row.push(Space::new(Length::Fill, Length::Shrink))
+                    }
+                }
+
+                let mut sliders_weapon_slot = Row::new()
+                    .spacing(5)
+                    .push(Text::new("Weapon slots").width(Length::Units(105)));
                 for (index, (state, value)) in
                     self.states_values_slider_weapon_slot.iter_mut().enumerate()
                 {
@@ -320,6 +367,7 @@ impl Sandbox for MainApp {
                             .height(Length::FillPortion(3)),
                     )
                     .push(Space::new(Length::Shrink, Length::Fill))
+                    .push(weapon_jewels_row)
                     .push(sliders_weapon_slot)
             }
             Page::Talisman => {
@@ -343,14 +391,14 @@ impl Sandbox for MainApp {
         }
         .align_items(Align::Center);
 
-        let mut col_titles = Row::new();
+        let mut col_titles = Row::new().push(Space::new(Length::Units(20), Length::Shrink));
 
         for col_name in array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"])
         {
             col_titles = col_titles.push(
                 Text::new(col_name)
                     .width(Length::Fill)
-                    .horizontal_alignment(iced::HorizontalAlignment::Center),
+                    .horizontal_alignment(HorizontalAlignment::Center),
             );
         }
 
@@ -384,7 +432,7 @@ fn build_part_to_button<'a>(
     )
     .style(style_iced::Button::Result)
     .width(Length::Fill)
-    .height(Length::Units(60));
+    .height(Length::Units(HEIGHT_BIG_BUTTON));
     if build_part.is_none() {
         button
     } else {
