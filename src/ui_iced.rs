@@ -94,6 +94,7 @@ pub struct MainApp {
     state_edit_add_skill_button: button::State,
 
     state_cancel_button: button::State,
+    state_remove_talisman_button: button::State,
 }
 
 enum Page {
@@ -130,6 +131,7 @@ pub enum Message {
     EditAddSkill,
     EditRemoveSkill(usize),
     EditSkillSliderChanged(usize, u8),
+    RemoveTalisman,
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -302,6 +304,12 @@ impl Sandbox for MainApp {
             }
             Message::EditSkillSliderChanged(index, value) => {
                 self.edit_wish_fields[index].value_slider = value
+            }
+            Message::RemoveTalisman => {
+                self.talismans.remove(self.selected_talisman.unwrap());
+                self.clear_talisman_editor();
+                self.is_editing = false;
+                self.selected_talisman = None;
             }
         }
     }
@@ -523,6 +531,14 @@ impl Sandbox for MainApp {
                                     .spacing(10)
                                     .push(
                                         Button::new(
+                                            &mut self.state_remove_talisman_button,
+                                            Text::new("Remove"),
+                                        )
+                                        .on_press(Message::RemoveTalisman)
+                                        .style(style_iced::Button::RemoveTalisman),
+                                    )
+                                    .push(
+                                        Button::new(
                                             &mut self.state_cancel_button, // cheating
                                             Container::new(Text::new("Cancel"))
                                                 .center_x()
@@ -534,7 +550,7 @@ impl Sandbox for MainApp {
                                     .push(
                                         Button::new(
                                             &mut self.state_edit_button, // cheating
-                                            Container::new(Text::new("Save")),
+                                            Text::new("Save"),
                                         )
                                         .style(style_iced::Button::Save)
                                         .on_press(Message::SaveEdition),

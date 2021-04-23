@@ -66,6 +66,7 @@ pub enum Button {
     Edit,
     Save,
     Cancel,
+    RemoveTalisman,
 }
 
 impl button::StyleSheet for Button {
@@ -113,6 +114,11 @@ impl button::StyleSheet for Button {
             },
             Button::Cancel => button::Style {
                 background: Some(Background::Color(Color::from_rgb(0.24, 0.56, 0.82))),
+                text_color: Color::WHITE,
+                ..button::Style::default()
+            },
+            Button::RemoveTalisman => button::Style {
+                background: Some(Background::Color(Color::from_rgb(0.95, 0.27, 0.41))),
                 text_color: Color::WHITE,
                 ..button::Style::default()
             },
