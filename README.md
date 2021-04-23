@@ -6,6 +6,12 @@ Armor files used by RAB here: https://github.com/itytophile/monster-hunter-rise-
 WARNING: The binary (the .exe file) must be next to the "armors" folder for it to work!!!!
 
 If you use Windows or Linux, you can download the binary here https://github.com/itytophile/rab/releases
+## Screenshots
+Choose the wished skills and RAB searches compatible builds for you:
+![Main RAB page](https://raw.githubusercontent.com/itytophile/rab/docs/screenshots/rab_main.png)
+You can add your own talismans to RAB:
+![Talisman menu](https://raw.githubusercontent.com/itytophile/rab/docs/screenshots/talisman_menu.png)
+![Talisman edition](https://raw.githubusercontent.com/itytophile/rab/docs/screenshots/talisman_edition.png)
 ## Building
 You have to install Rust first. Instructions here https://rustup.rs/
 And you need git.
