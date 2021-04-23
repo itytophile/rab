@@ -92,6 +92,8 @@ pub struct MainApp {
 
     edit_wish_fields: Vec<WishField>,
     state_edit_add_skill_button: button::State,
+
+    state_cancel_button: button::State,
 }
 
 enum Page {
@@ -121,6 +123,7 @@ pub enum Message {
     SelectTalisman(Option<usize>),
     EditTalisman,
     SaveEdition,
+    CancelEdition,
     TalismanSlotChanged(usize, u8),
     EditTalismanName(String),
     EditSkillSelected(usize, Skill),
@@ -143,6 +146,15 @@ const COLUMN_SPACING: u16 = 10;
 const FILTER_INPUT_WIDTH: u16 = 150;
 const SCROLL_PADDING: u16 = 20;
 const LEFT_COLUMN_WIDTH: u16 = 470;
+
+impl MainApp {
+    fn clear_talisman_editor(&mut self) {
+        for (_, slider_value) in self.states_values_slider_talisman_slot.iter_mut() {
+            *slider_value = 0
+        }
+        self.edit_wish_fields.clear();
+    }
+}
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -257,10 +269,24 @@ impl Sandbox for MainApp {
             }
             Message::SaveEdition => {
                 self.is_editing = false;
-                for (_, slider_value) in self.states_values_slider_talisman_slot.iter_mut() {
-                    *slider_value = 0
-                }
-                self.edit_wish_fields.clear();
+                let talisman = &mut self.talismans[self.selected_talisman.unwrap()];
+                talisman.name = self.value_edit_text_input.clone();
+                talisman.skills = self
+                    .edit_wish_fields
+                    .iter()
+                    .map(|field| (field.selected, field.value_slider))
+                    .collect();
+                talisman.slots = self
+                    .states_values_slider_talisman_slot
+                    .iter()
+                    .map(|(_, slot)| *slot)
+                    .filter(|slot| *slot > 0)
+                    .collect();
+                self.clear_talisman_editor()
+            }
+            Message::CancelEdition => {
+                self.is_editing = false;
+                self.clear_talisman_editor()
             }
             Message::TalismanSlotChanged(index, value) => {
                 self.states_values_slider_talisman_slot[index].1 = value
@@ -493,14 +519,26 @@ impl Sandbox for MainApp {
                                 .max_height(350),
                             )
                             .push(
-                                Button::new(
-                                    &mut self.state_edit_button, // cheating
-                                    Container::new(Text::new("Save"))
-                                        .center_x()
-                                        .width(Length::Units(100)),
-                                )
-                                .style(style_iced::Button::Save)
-                                .on_press(Message::SaveEdition),
+                                Row::new()
+                                    .spacing(10)
+                                    .push(
+                                        Button::new(
+                                            &mut self.state_cancel_button, // cheating
+                                            Container::new(Text::new("Cancel"))
+                                                .center_x()
+                                                .width(Length::Units(100)),
+                                        )
+                                        .style(style_iced::Button::Cancel)
+                                        .on_press(Message::CancelEdition),
+                                    )
+                                    .push(
+                                        Button::new(
+                                            &mut self.state_edit_button, // cheating
+                                            Container::new(Text::new("Save")),
+                                        )
+                                        .style(style_iced::Button::Save)
+                                        .on_press(Message::SaveEdition),
+                                    ),
                             )
                     } else {
                         let talisman_desc = talisman_to_element(
