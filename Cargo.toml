@@ -5,7 +5,6 @@ authors = ["ityt <imran.tierce@protonmail.com>"]
 edition = "2018"
 repository = "https://github.com/itytophile/rab"
 description = "Rusty Armor Builds - Monster Hunter Rise Armor Set Creation Tool"
-license = "GPL-3.0-or-later"
 license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
