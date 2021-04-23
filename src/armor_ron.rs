@@ -1,6 +1,13 @@
-use ron::de::from_reader;
+use ron::{
+    de::from_reader,
+    ser::{to_string_pretty, PrettyConfig},
+    Error,
+};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, fs::File};
+use std::{
+    fmt::Display,
+    fs::{self, File},
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub enum Gender {
@@ -37,6 +44,21 @@ struct Talisman {
     slots: Vec<u8>,
 }
 
+pub fn save_talismans_to_file(talismans: &[Armor], path: &str) -> Result<String, Error> {
+    let talismans: Vec<Talisman> = talismans.iter().map(armor_to_talisman).collect();
+
+    let text = to_string_pretty(
+        &talismans,
+        PrettyConfig::new().with_indentor("  ".to_string()),
+    )?;
+
+    fs::write(path, text)?;
+
+    let path = fs::canonicalize(path)?;
+
+    Ok(path.to_string_lossy().into_owned())
+}
+
 impl PartialEq for Armor {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
@@ -57,15 +79,19 @@ fn talisman_to_armor(talisman: &Talisman) -> Armor {
     }
 }
 
-pub fn get_talismans(path: &str) -> Vec<Armor> {
-    match File::open(path) {
-        Ok(file) => {
-            let talismans: Vec<Talisman> =
-                from_reader(file).expect(&format!("The file {} has a bad format!", path));
-            talismans.iter().map(talisman_to_armor).collect()
-        }
-        Err(_) => Vec::with_capacity(0),
+fn armor_to_talisman(armor: &Armor) -> Talisman {
+    Talisman {
+        name: armor.name.clone(),
+        skills: armor.skills.clone(),
+        slots: armor.slots.clone(),
     }
+}
+
+pub fn get_talismans(path: &str) -> Result<Vec<Armor>, Error> {
+    let file = File::open(path)?;
+    let talismans: Vec<Talisman> = from_reader(file)?;
+    let talismans: Vec<Armor> = talismans.iter().map(talisman_to_armor).collect();
+    Ok(talismans)
 }
 
 struct SkillDesc {

@@ -1,7 +1,10 @@
 use std::{array, cmp::Ordering};
 
-use crate::build_search::{pre_selection_then_brute_force_search, Build};
 use crate::style_iced;
+use crate::{
+    armor_ron::save_talismans_to_file,
+    build_search::{pre_selection_then_brute_force_search, Build},
+};
 use crate::{
     armor_ron::{get_armor_list, get_talismans, Armor, Gender, Skill},
     build_search::Jewels,
@@ -95,6 +98,9 @@ pub struct MainApp {
 
     state_cancel_button: button::State,
     state_remove_talisman_button: button::State,
+
+    state_save_talismans_button: button::State,
+    state_discard_talismans_button: button::State,
 }
 
 enum Page {
@@ -132,6 +138,9 @@ pub enum Message {
     EditRemoveSkill(usize),
     EditSkillSliderChanged(usize, u8),
     RemoveTalisman,
+    AddTalisman,
+    SaveTalismans,
+    DiscardTalismans,
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -162,7 +171,19 @@ impl Sandbox for MainApp {
     type Message = Message;
 
     fn new() -> Self {
-        let talismans = get_talismans(TALISMANS_PATH);
+        let talismans = match get_talismans(TALISMANS_PATH) {
+            Ok(talismans) => {
+                println!("Talisman file succesfully loaded.");
+                talismans
+            }
+            Err(err) => {
+                println!(
+                    "Can't read the talisman file: {}\nEmpty talisman list loaded.",
+                    err
+                );
+                vec![]
+            }
+        };
         let states_talisman_button = vec![Default::default(); talismans.len()];
         Self {
             wish_fields: vec![WishField::default()],
@@ -306,10 +327,46 @@ impl Sandbox for MainApp {
                 self.edit_wish_fields[index].value_slider = value
             }
             Message::RemoveTalisman => {
-                self.talismans.remove(self.selected_talisman.unwrap());
+                let index = self.selected_talisman.unwrap();
+                self.talismans.remove(index);
+                self.states_talisman_button.remove(index);
                 self.clear_talisman_editor();
                 self.is_editing = false;
                 self.selected_talisman = None;
+            }
+            Message::AddTalisman => {
+                self.talismans.push(Armor {
+                    name: "New talisman".to_string(),
+                    skills: vec![(Skill::Botanist, 1)],
+                    ..Default::default()
+                });
+                self.states_talisman_button.push(Default::default())
+            }
+            Message::SaveTalismans => {
+                match save_talismans_to_file(&self.talismans, TALISMANS_PATH) {
+                    Ok(path) => println!("Talismans saved to {}", path),
+                    Err(err) => println!("Unable to save the talismans: {}", err),
+                }
+            }
+            Message::DiscardTalismans => {
+                self.selected_talisman = None;
+                let talismans = match get_talismans(TALISMANS_PATH) {
+                    Ok(talismans) => {
+                        println!("Talisman file succesfully loaded.");
+                        talismans
+                    }
+                    Err(err) => {
+                        println!(
+                            "Can't read the talisman file: {}\nEmpty talisman list loaded.",
+                            err
+                        );
+                        vec![]
+                    }
+                };
+                let states_talisman_button = vec![Default::default(); talismans.len()];
+
+                self.talismans = talismans;
+                self.states_talisman_button = states_talisman_button;
             }
         }
     }
@@ -475,7 +532,8 @@ impl Sandbox for MainApp {
 
                 let add_talisman_button =
                     Button::new(&mut self.state_add_wish_button, Text::new("Add talisman"))
-                        .style(style_iced::Button::Add);
+                        .style(style_iced::Button::Add)
+                        .on_press(Message::AddTalisman);
 
                 let row_buttons = Row::new()
                     .spacing(BUTTON_SPACING)
@@ -585,9 +643,33 @@ impl Sandbox for MainApp {
                             .center_x()
                             .height(Length::FillPortion(3)),
                     );
+                } else {
+                    column = column.push(Space::with_height(Length::FillPortion(3)))
                 }
 
-                column
+                let mut discard_button = Button::new(
+                    &mut self.state_discard_talismans_button,
+                    Text::new("Discard modifications"),
+                )
+                .style(style_iced::Button::Remove);
+
+                let mut save_button = Button::new(
+                    &mut self.state_save_talismans_button,
+                    Text::new("Save to file"),
+                )
+                .style(style_iced::Button::Add);
+
+                if !self.is_editing {
+                    discard_button = discard_button.on_press(Message::DiscardTalismans);
+                    save_button = save_button.on_press(Message::SaveTalismans)
+                }
+
+                column.push(
+                    Row::new()
+                        .spacing(10)
+                        .push(discard_button)
+                        .push(save_button),
+                )
             }
         }
         .align_items(Align::Center);
@@ -752,6 +834,7 @@ fn talisman_to_element<'a>(
     state_scroll: &'a mut scrollable::State,
 ) -> Scrollable<'a, Message> {
     let mut talisman_desc = Scrollable::new(state_scroll)
+        .max_height(200)
         .align_items(Align::Center)
         .spacing(5)
         .push(Text::new(&talisman.name));
