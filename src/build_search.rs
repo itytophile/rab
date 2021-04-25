@@ -18,9 +18,14 @@ pub struct Build {
     pub waist: Option<(Armor, Jewels)>,
     pub leg: Option<(Armor, Jewels)>,
     pub talisman: Option<(Armor, Jewels)>,
-    pub weapon_jewels: Jewels
+    pub weapon_jewels: Jewels,
 }
 
+/// Returns a Vec containing every item of the provided slice but wrapped in an Option, then add None
+/// at the end of the Vec.
+/// # Why
+/// The main goal is to test every possible combination of armor pieces including the "empty" armor piece.
+/// The None represents this "empty" armor piece and if we need None, then every other pieces must be "optionified".
 fn optionify_slice_and_add_none<T>(slice: &[T]) -> Vec<Option<&T>> {
     slice
         .iter()
@@ -29,6 +34,15 @@ fn optionify_slice_and_add_none<T>(slice: &[T]) -> Vec<Option<&T>> {
         .collect()
 }
 
+/// Naive search of compatible builds. This is not recommended to call this function directly (see [`pre_selection_then_brute_force_search`]).
+/// It will try every possible build combination with the slices provided (thanks to a cartesian product).
+/// Then it will try to set jewels on the builds if the wishes are not yet fulfilled.
+/// # Detailed steps
+/// For each combination:
+/// 1. Remove from the wishes the combination's skills
+/// 2. Try to fulfill the remaining wishes with jewels without spoiling slots, if not possible the algorithm stops
+/// 3. Remove the repetitive found builds: If a build has the "same" armor pieces than another build
+/// but the first build has more empty armor pieces then we can ignore the second build. (Example in code)
 fn brute_force_search_builds(
     wishes: &[(Skill, u8)],
     helmets: &[Armor],
@@ -40,7 +54,7 @@ fn brute_force_search_builds(
     weapon_slots: [u8; 3],
 ) -> Vec<Build> {
     let mut builds: Vec<Build> = Vec::with_capacity(500);
-    
+
     for v in array::IntoIter::new([helmets, chests, arms, waists, legs, talismans])
         .map(optionify_slice_and_add_none)
         .multi_cartesian_product()
@@ -98,7 +112,7 @@ fn brute_force_search_builds(
             extract_slots_copy(&waist),
             extract_slots_copy(&leg),
             extract_slots_copy(&talisman),
-            weapon_slots
+            weapon_slots,
         ];
 
         'wish_loop: for (skill, amount) in delta_wishes.iter_mut() {
@@ -157,7 +171,7 @@ fn brute_force_search_builds(
                     None => None,
                     Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[5])),
                 },
-                weapon_jewels: possible_jewels_for_each_part[6]
+                weapon_jewels: possible_jewels_for_each_part[6],
             };
 
             // Avoid having redondant builds like:
@@ -251,6 +265,7 @@ fn brute_force_search_builds(
     builds
 }
 
+/// Makes a copy of the armor slots. Useful when we want to write in the array.
 fn extract_slots_copy(helmet: &Option<&Armor>) -> [u8; 3] {
     match helmet {
         Some(armor) => {
@@ -264,6 +279,8 @@ fn extract_slots_copy(helmet: &Option<&Armor>) -> [u8; 3] {
     }
 }
 
+/// Calls [`search_best_candidates`] on each slice before calling [`brute_force_search_builds`]. Returns
+/// the results of the brute force search. This is the recommended function to call when we want to search builds.
 pub fn pre_selection_then_brute_force_search(
     wishes: &[(Skill, u8)],
     helmets: &[Armor],
@@ -287,6 +304,19 @@ pub fn pre_selection_then_brute_force_search(
     )
 }
 
+/// When we are comparing armor pieces we can't really say that an armor is "equal" to another.
+/// Like a piece with two 1-sized slots and another with one 3-sized slot. We can't really say
+/// that the first piece is better than the other and vice-versa and we can't say that they are equal either.
+///
+/// As an example, let's say that we are comparing three pieces:
+/// - piece A with two 1-sized slots
+/// - piece B with one 3-sized slots
+/// - piece C with one 1-sized slot and one 2-sized slot
+///
+/// Let's say that if we can't say which piece is the best between two pieces then the two pieces are equal.
+///
+/// Then A == B and B == C. But if this is true, is A == C? No, because C is clearly better than A. This is why
+/// this is "strange" to use directly [`Ordering`] with [`Ordering::Equal`].
 #[derive(Eq, PartialEq, Debug)]
 enum OddComparison {
     Better,
@@ -294,6 +324,15 @@ enum OddComparison {
     Undefined,
 }
 
+/// The most difficult function in my opinion (ityt). Compares two armor pieces and returns an [`OddComparison`].
+/// # Detailed steps
+/// 1. Generate a "delta" skill for each piece. See [`generate_deltas_skills`].
+/// 2. Generate virtual slots for each piece. See [`generate_virtual_slots`].
+/// 3. We compare the pieces. Some details in code.
+///
+/// Special comparison: If A can recreate B's skills with jewels and A has still equal or better
+/// free slots than B's then A is better. This can change because jewels are expensive and sometimes
+/// we just want the piece that have already the skills.
 fn compare_armors(wishes: &[(Skill, u8)], a: &Armor, b: &Armor) -> OddComparison {
     // add virtual slot depending on the wished skills,
     // if the skill has no jewel (like Critical Boost), the armor has top priority
@@ -346,6 +385,11 @@ fn compare_armors(wishes: &[(Skill, u8)], a: &Armor, b: &Armor) -> OddComparison
     OddComparison::Undefined
 }
 
+/// Finds the best pieces to fulfill the wishes.
+/// # Detailed steps
+/// 1. Remove the pieces that are not compatible with the hunter's gender.
+/// 2. Remove the pieces that have not the wished skills and can't accept a jewel for these skills.
+/// 3. Compare the selected pieces with [`compare_armors`] and remove the pieces that are worse than another piece.
 fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor], gender: Gender) -> Vec<Armor> {
     // trivial sort
     let armors: Vec<&Armor> = armors
@@ -389,6 +433,11 @@ fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor], gender: Gend
     armors_copy
 }
 
+/// Creates dummy slots from skills' jewel size. Returns (true, _) if one of the skill doesn't
+/// have a jewel.
+/// # Why
+/// This is useful when we want to know if a piece with only its slots and jewels can be better or equal than
+/// another with its true skills and slots.
 fn generate_virtual_slots(wishes: &[(Skill, u8)], skills: &[(Skill, u8)]) -> (bool, Vec<u8>) {
     let mut priority = false;
     let mut virtual_slots = Vec::with_capacity(5);
@@ -409,9 +458,11 @@ fn generate_virtual_slots(wishes: &[(Skill, u8)], skills: &[(Skill, u8)]) -> (bo
     (priority, virtual_slots)
 }
 
-/**
-accepts only sorted slots slice !!!!!!!!!!
-*/
+/// Compares two pieces' slot and returns an [`OddComparison`].
+/// See [`OddComparison`] for details.
+///
+/// # Warning
+/// This functions works only if the provided slices are sorted.
 fn compare_slots(slots0: &[u8], slots1: &[u8]) -> OddComparison {
     if slots0.is_empty() {
         if slots1.is_empty() {
@@ -457,9 +508,17 @@ fn compare_slots(slots0: &[u8], slots1: &[u8]) -> OddComparison {
     }
 }
 
-/**
-When comparing two armors with the same skills, we can "remove" them to make the comparison easier
-*/
+/// Compares skills of each piece and removes identical skills from them.
+/// # Why
+/// When we are comparing two armor pieces, it becomes easier when we remove
+/// the same skills to only compare the true differences.
+///
+/// As an example: let's say with have A with the skills [(Botanist,2),(CriticalBoost,1)]
+/// and B with [(Botanist,1),(CriticalBoost,1),(AttackBoost,1)]
+///
+/// the delta skills will be:
+/// - for A: [(Botanist,1),(CriticalBoost,0)]
+/// - for B: [(Botanist,0),(CriticalBoost,0),(AttackBoost,1)]
 fn generate_deltas_skills(
     skills0: &[(Skill, u8)],
     skills1: &[(Skill, u8)],
