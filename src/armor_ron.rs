@@ -65,9 +65,9 @@ impl PartialEq for Armor {
     }
 }
 
-pub fn get_armor_list(path: &str) -> Vec<Armor> {
-    from_reader(File::open(path).expect(&format!("Failed opening {}", path)))
-        .expect(&format!("The file {} has a bad format!", path))
+pub fn get_armor_list(path: &str) -> Result<Vec<Armor>, Error> {
+    let armors: Vec<Armor> = from_reader(File::open(path)?)?;
+    Ok(armors)
 }
 
 fn talisman_to_armor(talisman: &Talisman) -> Armor {

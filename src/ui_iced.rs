@@ -103,9 +103,14 @@ pub struct MainApp {
     state_discard_talismans_button: button::State,
 }
 
+enum RabError {
+    ArmorFiles,
+}
+
 enum Page {
     Main,
     Talisman,
+    Err(String, RabError),
 }
 
 impl Default for Page {
@@ -166,6 +171,16 @@ impl MainApp {
         self.edit_wish_fields.clear();
     }
 }
+fn get_all_armors_from_file(
+) -> Result<(Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>), ron::Error> {
+    Ok((
+        get_armor_list(HELMETS_PATH)?,
+        get_armor_list(CHESTS_PATH)?,
+        get_armor_list(ARMS_PATH)?,
+        get_armor_list(WAISTS_PATH)?,
+        get_armor_list(LEGS_PATH)?,
+    ))
+}
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -185,20 +200,30 @@ impl Sandbox for MainApp {
             }
         };
         let states_talisman_button = vec![Default::default(); talismans.len()];
+        let mut page = Page::Main;
+        let (helmets, chests, arms, waists, legs) = match get_all_armors_from_file() {
+            Ok(lists) => lists,
+            Err(err) => {
+                page = Page::Err(err.to_string(), RabError::ArmorFiles);
+                (vec![], vec![], vec![], vec![], vec![])
+            }
+        };
         Self {
             wish_fields: vec![WishField::default()],
 
-            waists: get_armor_list(WAISTS_PATH),
-            helmets: get_armor_list(HELMETS_PATH),
-            arms: get_armor_list(ARMS_PATH),
-            legs: get_armor_list(LEGS_PATH),
-            chests: get_armor_list(CHESTS_PATH),
+            waists,
+            helmets,
+            arms,
+            legs,
+            chests,
             talismans,
             states_talisman_button,
 
             filtered_wish_choices: Skill::ALL.to_vec(),
 
             selected_gender: Gender::Female,
+
+            page,
 
             ..Self::default()
         }
@@ -414,7 +439,7 @@ impl Sandbox for MainApp {
             }
         }
 
-        let column_left = match self.page {
+        let column_left = match &self.page {
             Page::Main => {
                 let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
                     .padding(SCROLL_PADDING)
@@ -671,6 +696,16 @@ impl Sandbox for MainApp {
                         .push(save_button),
                 )
             }
+            // must change how the page system works, will do it another day. I'll also separate this big chunk of code into files.
+            Page::Err(msg, _) => Column::new().push(
+                Text::new(format!(
+                    "There is an error with the armor files.\n\n\
+                    Did you forget to download the \"armors\" folder?\nThis folder must be next to the executable.\n\n\
+                    Check the README at\nhttps://github.com/itytophile/rab#readme\n\nError: {}",
+                    msg
+                ))
+                .horizontal_alignment(HorizontalAlignment::Center),
+            ),
         }
         .align_items(Align::Center);
 
