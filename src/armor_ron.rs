@@ -206,6 +206,7 @@ pub enum Skill {
     ChameleosBlessing,
     TeostraBlessing,
     MastersTouch,
+    RapidFireUp,
 }
 
 use Skill::*;
@@ -229,7 +230,7 @@ impl Skill {
     pub fn get_limit(&self) -> u8 {
         self.get_skill_desc().limit
     }
-    pub const ALL: [Skill; 105] = [
+    pub const ALL: [Skill; 106] = [
         Botanist,
         DefenseBoost,
         ItemProlonger,
@@ -335,6 +336,7 @@ impl Skill {
         ChameleosBlessing,
         TeostraBlessing,
         MastersTouch,
+        RapidFireUp,
     ];
     fn get_skill_desc(&self) -> SkillDesc {
         match self {
@@ -395,7 +397,7 @@ impl Skill {
 
             ProtectivePolish => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             StaminaThief => SkillDesc {
@@ -405,7 +407,7 @@ impl Skill {
 
             Partbreaker => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             Mushroomancer => SkillDesc {
@@ -450,7 +452,7 @@ impl Skill {
 
             NormalRapidUp => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             SpeedEating => SkillDesc {
@@ -495,7 +497,7 @@ impl Skill {
 
             PierceUp => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             AimBooster => SkillDesc {
@@ -505,7 +507,7 @@ impl Skill {
 
             SleepAttack => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             BlightResistance => SkillDesc {
@@ -520,7 +522,7 @@ impl Skill {
 
             JumpMaster => SkillDesc {
                 limit: 1,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             Constitution => SkillDesc {
@@ -535,17 +537,17 @@ impl Skill {
 
             GoodLuck => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             RazorSharp => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             SpareShot => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             WirebugWhisperer => SkillDesc {
@@ -555,12 +557,12 @@ impl Skill {
 
             Resentment => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             Handicraft => SkillDesc {
                 limit: 5,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             FlinchFree => SkillDesc {
@@ -575,17 +577,17 @@ impl Skill {
 
             LatentPower => SkillDesc {
                 limit: 5,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             WeaknessExploit => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             Resuscitate => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             EvadeWindow => SkillDesc {
@@ -605,7 +607,7 @@ impl Skill {
 
             Agitator => SkillDesc {
                 limit: 5,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             DevineBlessing => SkillDesc {
@@ -665,7 +667,7 @@ impl Skill {
 
             SpreadUp => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             ReloadSpeed => SkillDesc {
@@ -755,7 +757,7 @@ impl Skill {
 
             HellfireCloak => SkillDesc {
                 limit: 4,
-                jewel_size: None,
+                jewel_size: Some(3),
             },
 
             BubblyDance => SkillDesc {
@@ -790,7 +792,7 @@ impl Skill {
 
             BlastAttack => SkillDesc {
                 limit: 3,
-                jewel_size: None,
+                jewel_size: Some(2),
             },
 
             MasterMounter => SkillDesc {
@@ -856,6 +858,10 @@ impl Skill {
             MastersTouch => SkillDesc {
                 limit: 3,
                 jewel_size: Some(2),
+            },
+            RapidFireUp => SkillDesc {
+                limit: 3,
+                jewel_size: Some(3),
             },
         }
     }
