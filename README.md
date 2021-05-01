@@ -2,6 +2,8 @@
 Rusty Armor Builds - Monster Hunter Rise Armor Set Creation Tool
 
 Armor files used by RAB here: https://github.com/itytophile/monster-hunter-rise-armors
+
+Localization files here: https://github.com/itytophile/rab-locale
 ## Installation
 WARNING: The binary (the .exe file) must be next to the "armors" folder for it to work!!!!
 
