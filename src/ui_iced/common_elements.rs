@@ -13,6 +13,8 @@ use crate::{
 
 use super::{Message, WishField};
 
+use crate::locale::InterfaceSymbol;
+
 pub(super) const HEIGHT_BIG_BUTTON: u16 = 60;
 pub(super) const BUTTON_SPACING: u16 = 10;
 pub(super) const COLUMN_SPACING: u16 = 10;
@@ -39,7 +41,7 @@ pub(super) fn get_column_builds_found<'a>(
         .padding(SCROLL_PADDING);
     let size = builds.len();
     if size == 0 {
-        builds_scrolls = builds_scrolls.push(Text::new("No Result"));
+        builds_scrolls = builds_scrolls.push(Text::new(InterfaceSymbol::NoResult));
     } else {
         for ((key, build), state_button) in builds
             .iter()
@@ -78,7 +80,14 @@ pub(super) fn get_column_builds_found<'a>(
         .spacing(BUTTON_SPACING)
         .push(Space::with_width(Length::Units(20)));
 
-    for col_name in array::IntoIter::new(["Helmet", "Chest", "Arm", "Waist", "Leg", "Talisman"]) {
+    for col_name in array::IntoIter::new([
+        InterfaceSymbol::Helmet,
+        InterfaceSymbol::Chest,
+        InterfaceSymbol::Arm,
+        InterfaceSymbol::Waist,
+        InterfaceSymbol::Leg,
+        InterfaceSymbol::Talisman,
+    ]) {
         col_titles = col_titles.push(
             Text::new(col_name)
                 .width(Length::Fill)
@@ -106,8 +115,11 @@ pub(super) fn get_wishfield_row<'a>(
         on_skill_selected,
     )
     .width(Length::Units(200));
-    let mut remove_button = Button::new(&mut wish_field.state_remove_button, Text::new("Remove"))
-        .style(style_iced::Button::Remove);
+    let mut remove_button = Button::new(
+        &mut wish_field.state_remove_button,
+        Text::new(InterfaceSymbol::Remove),
+    )
+    .style(style_iced::Button::Remove);
     if !disable_remove_button {
         remove_button = remove_button.on_press(on_remove);
     }
@@ -131,7 +143,13 @@ pub(super) fn get_skill_filter<'a>(
     state: &'a mut text_input::State,
     value: &str,
 ) -> TextInput<'a, Message> {
-    TextInput::new(state, "Skill filter", value, Message::FilterChanged).padding(5)
+    TextInput::new(
+        state,
+        &InterfaceSymbol::SkillFilter.to_string(),
+        value,
+        Message::FilterChanged,
+    )
+    .padding(5)
 }
 
 fn build_part_to_button<'a>(
@@ -141,9 +159,9 @@ fn build_part_to_button<'a>(
     let button = Button::new(
         state,
         Container::new(Text::new(if let Some((armor, _)) = build_part {
-            &armor.name
+            armor.name.clone()
         } else {
-            "Free"
+            InterfaceSymbol::Free.to_string()
         }))
         .width(Length::Fill)
         .height(Length::Fill)

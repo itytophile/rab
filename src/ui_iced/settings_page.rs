@@ -1,5 +1,7 @@
 use iced::{Button, Column, Element, Length, Row, Space, Text};
 
+use crate::locale::InterfaceSymbol;
+
 use super::{common_elements::COLUMN_SPACING, MainApp, Message, Page};
 
 pub trait SettingsPage {
@@ -33,8 +35,11 @@ impl SettingsPage for MainApp {
             )
             .push(
                 Row::new().push(Space::with_width(Length::Fill)).push(
-                    Button::new(&mut self.state_settings_button, Text::new("Back"))
-                        .on_press(Message::ChangePage(Page::Main)),
+                    Button::new(
+                        &mut self.state_settings_button,
+                        Text::new(InterfaceSymbol::Back),
+                    )
+                    .on_press(Message::ChangePage(Page::Main)),
                 ),
             )
             .into()

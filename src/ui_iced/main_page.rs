@@ -7,13 +7,17 @@ use iced::{
 use crate::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::Jewels,
+    locale::InterfaceSymbol,
     style_iced,
 };
 
-use super::{MainApp, Message, Page, common_elements::{
+use super::{
+    common_elements::{
         get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
         COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
-    }};
+    },
+    MainApp, Message, Page,
+};
 
 pub trait MainPage {
     fn get_main_page(&mut self) -> Element<Message>;
@@ -47,31 +51,37 @@ impl MainPage for MainApp {
             .spacing(5)
             .push(Radio::new(
                 Gender::Female,
-                "Female",
+                InterfaceSymbol::Female,
                 Some(self.selected_gender),
                 Message::GenderChanged,
             ))
             .push(Radio::new(
                 Gender::Male,
-                "Male",
+                InterfaceSymbol::Male,
                 Some(self.selected_gender),
                 Message::GenderChanged,
             ))
             .push(Space::with_width(Length::Units(20)))
             .push(filter_text_input);
 
-        let add_wish_button = Button::new(&mut self.state_add_wish_button, Text::new("Add wish"))
-            .style(style_iced::Button::Add)
-            .on_press(Message::AddWish);
+        let add_wish_button = Button::new(
+            &mut self.state_add_wish_button,
+            Text::new(InterfaceSymbol::AddWish),
+        )
+        .style(style_iced::Button::Add)
+        .on_press(Message::AddWish);
         let talisman_button = Button::new(
             &mut self.state_talisman_button,
-            Text::new("Manage talismans"),
+            Text::new(InterfaceSymbol::ManageTalismans),
         )
         .style(style_iced::Button::Talisman)
         .on_press(Message::ChangePage(Page::Talisman));
-        let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
-            .style(style_iced::Button::Search)
-            .on_press(Message::Search);
+        let search_button = Button::new(
+            &mut self.state_search_button,
+            Text::new(InterfaceSymbol::SearchBuilds),
+        )
+        .style(style_iced::Button::Search)
+        .on_press(Message::Search);
         let buttons = Row::new()
             .spacing(BUTTON_SPACING)
             .push(add_wish_button)
@@ -97,7 +107,7 @@ impl MainPage for MainApp {
 
         let mut sliders_weapon_slot = Row::new()
             .spacing(5)
-            .push(Text::new("Weapon slots").width(Length::Units(105)));
+            .push(Text::new(InterfaceSymbol::WeaponSlots).width(Length::Units(105)));
         for (index, (state, value)) in self.states_values_slider_weapon_slot.iter_mut().enumerate()
         {
             sliders_weapon_slot = sliders_weapon_slot
@@ -133,12 +143,13 @@ impl MainPage for MainApp {
                 .height(Length::Fill),
             )
             .push(
-                Row::new()
-                    .push(Space::with_width(Length::Fill))
-                    .push(Button::new(
+                Row::new().push(Space::with_width(Length::Fill)).push(
+                    Button::new(
                         &mut self.state_settings_button,
-                        Text::new("Settings"),
-                    ).on_press(Message::ChangePage(Page::Settings))),
+                        Text::new(InterfaceSymbol::Settings),
+                    )
+                    .on_press(Message::ChangePage(Page::Settings)),
+                ),
             );
         Row::new()
             .padding(5)
@@ -157,14 +168,30 @@ fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
         for (style, name, value) in array::IntoIter::new([
             (
                 style_iced::Container::Defense,
-                "Defense",
+                InterfaceSymbol::Defense,
                 armor.defense as i8,
             ),
-            (style_iced::Container::Fire, "Fire", armor.fire),
-            (style_iced::Container::Water, "Water", armor.water),
-            (style_iced::Container::Thunder, "Thunder", armor.thunder),
-            (style_iced::Container::Ice, "Ice", armor.ice),
-            (style_iced::Container::Dragon, "Dragon", armor.dragon),
+            (
+                style_iced::Container::Fire,
+                InterfaceSymbol::Fire,
+                armor.fire,
+            ),
+            (
+                style_iced::Container::Water,
+                InterfaceSymbol::Water,
+                armor.water,
+            ),
+            (
+                style_iced::Container::Thunder,
+                InterfaceSymbol::Thunder,
+                armor.thunder,
+            ),
+            (style_iced::Container::Ice, InterfaceSymbol::Ice, armor.ice),
+            (
+                style_iced::Container::Dragon,
+                InterfaceSymbol::Dragon,
+                armor.dragon,
+            ),
         ]) {
             col_armor_stats = col_armor_stats.push(
                 Row::new()
@@ -241,15 +268,24 @@ fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
 
         for (slot, skill) in couple_slot_jewel {
             col_armor_stats = col_armor_stats.push(if let Some(skill) = skill {
-                Container::new(Text::new(format!("{} on lvl {} slot", skill, slot)))
-                    .width(Length::Units(170))
-                    .center_x()
-                    .style(style_iced::Container::Ice)
+                Container::new(Text::new(
+                    InterfaceSymbol::TemplateJewelOnSlot
+                        .to_string()
+                        .replace("{skill}", &skill.to_string())
+                        .replace("{size}", &slot.to_string()),
+                ))
+                .width(Length::Units(170))
+                .center_x()
+                .style(style_iced::Container::Ice)
             } else {
-                Container::new(Text::new(format!("Free lvl {} slot", slot)))
-                    .width(Length::Units(170))
-                    .center_x()
-                    .style(style_iced::Container::Ice)
+                Container::new(Text::new(
+                    InterfaceSymbol::TemplateFreeSlot
+                        .to_string()
+                        .replace("{size}", &slot.to_string()),
+                ))
+                .width(Length::Units(170))
+                .center_x()
+                .style(style_iced::Container::Ice)
             });
         }
 

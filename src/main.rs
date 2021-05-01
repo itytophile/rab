@@ -11,8 +11,8 @@ use locale::Locale;
 use once_cell::sync::Lazy;
 
 const FONT: &[u8] = include_bytes!("fonts/FiraSans-Regular.ttf");
-// I use this global variable to use the locale within the Display trait
-// for the Skill struct. If you have another solution don't hesitate to tell me.
+// I use this global variable to use the locale within the implementations of the Display trait
+// If you have another solution don't hesitate to tell me.
 static LOCALE: Lazy<Mutex<Option<Locale>>> = Lazy::new(Default::default);
 
 pub fn main() -> iced::Result {

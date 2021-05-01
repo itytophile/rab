@@ -22,6 +22,8 @@ use talisman_page::TalismanPage;
 
 use self::{error_page::get_error_page, settings_page::SettingsPage};
 
+use crate::locale::Localization;
+
 struct WishField {
     state_pick_list: pick_list::State<Skill>,
     selected: Skill,
@@ -56,6 +58,7 @@ pub struct MainApp {
     state_filter_text_input: text_input::State,
     value_filter_text_input: String,
 
+    sorted_wish_choices: Vec<Skill>,
     filtered_wish_choices: Vec<Skill>,
 
     helmets: Vec<Armor>,
@@ -235,9 +238,17 @@ impl Sandbox for MainApp {
 
         let selected_locale = "English".to_string();
 
-        *super::LOCALE.lock().unwrap() = locales.get(&selected_locale).cloned();
-
         let state_buttons_locale = vec![Default::default(); locales.len()];
+
+        let locale = locales.get(&selected_locale).cloned();
+
+        let mut sorted_wish_choices = Skill::ALL.to_vec();
+        sorted_wish_choices
+            .sort_unstable_by(|a, b| a.apply_locale(&locale).cmp(&b.apply_locale(&locale)));
+
+        let filtered_wish_choices = sorted_wish_choices.clone();
+
+        *super::LOCALE.lock().unwrap() = locale;
 
         Self {
             wish_fields: vec![WishField::default()],
@@ -250,7 +261,8 @@ impl Sandbox for MainApp {
             talismans,
             states_talisman_button,
 
-            filtered_wish_choices: Skill::ALL.to_vec(),
+            filtered_wish_choices,
+            sorted_wish_choices,
 
             selected_gender: Gender::Female,
 
@@ -307,7 +319,8 @@ impl Sandbox for MainApp {
             Message::ArmorDesc(option) => self.armor_desc = option,
             Message::FilterChanged(text) => {
                 self.value_filter_text_input = text;
-                self.filtered_wish_choices = Skill::ALL
+                self.filtered_wish_choices = self
+                    .sorted_wish_choices
                     .iter()
                     .copied()
                     .filter(|skill| {
@@ -427,7 +440,24 @@ impl Sandbox for MainApp {
             }
             Message::ChangePage(page) => self.page = page,
             Message::LocaleChanged(new_locale) => {
-                *super::LOCALE.lock().unwrap() = self.locales.get(&new_locale).cloned();
+                let locale = self.locales.get(&new_locale).cloned();
+                self.sorted_wish_choices
+                    .sort_unstable_by(|a, b| a.apply_locale(&locale).cmp(&b.apply_locale(&locale)));
+                
+                *super::LOCALE.lock().unwrap() = locale;
+
+                self.filtered_wish_choices = self
+                    .sorted_wish_choices
+                    .iter()
+                    .copied()
+                    .filter(|skill| {
+                        skill
+                            .to_string()
+                            .to_ascii_lowercase()
+                            .contains(&self.value_filter_text_input.to_ascii_lowercase())
+                    })
+                    .collect();
+
                 self.selected_locale = new_locale;
             }
         }
