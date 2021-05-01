@@ -4,17 +4,14 @@ use iced::{
 };
 
 use crate::{
-    armor_ron::{Armor, Skill},
+    armor_and_skills::{Armor, Skill},
     style_iced,
 };
 
-use super::{
-    common_elements::{
+use super::{MainApp, Message, Page, WishField, common_elements::{
         get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
         COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
-    },
-    MainApp, Message, WishField,
-};
+    }};
 
 pub trait TalismanPage {
     fn get_talisman_page(&mut self) -> Element<Message>;
@@ -29,7 +26,7 @@ impl TalismanPage for MainApp {
                 .width(Length::Units(100)),
         )
         .style(style_iced::Button::Talisman)
-        .on_press(Message::ToggleTalisman);
+        .on_press(Message::ChangePage(Page::Main));
 
         let add_talisman_button =
             Button::new(&mut self.state_add_wish_button, Text::new("Add talisman"))

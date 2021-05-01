@@ -4,7 +4,7 @@ use std::{
     iter,
 };
 
-use crate::armor_ron::{Armor, Gender, Skill};
+use crate::armor_and_skills::{Armor, Gender, Skill};
 
 use itertools::Itertools;
 

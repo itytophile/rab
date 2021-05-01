@@ -6,7 +6,7 @@ use iced::{
 };
 
 use crate::{
-    armor_ron::{Armor, Skill},
+    armor_and_skills::{Armor, Skill},
     build_search::{Build, Jewels},
     style_iced,
 };

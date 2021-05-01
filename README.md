@@ -30,9 +30,13 @@ Go to the rab folder:
 ```sh
 cd rab
 ```
-and clone the armors files repo (the armor files must be in a folder named "armors"):
+clone the armors files repo (the armor files must be in a folder named "armors"):
 ```sh
 git clone https://github.com/itytophile/monster-hunter-rise-armors.git armors
+```
+and clone the localization files repo (must be in a folder named "locale"):
+```sh
+git clone https://github.com/itytophile/rab-locale.git locale
 ```
 then you can run the software (execute the command directly in the rab folder):
 ```sh

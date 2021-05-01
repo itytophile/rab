@@ -1826,6 +1826,7 @@ version = "0.1.3"
 dependencies = [
  "iced",
  "itertools",
+ "once_cell",
  "ron",
  "serde",
 ]

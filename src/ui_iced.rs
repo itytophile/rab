@@ -1,14 +1,18 @@
 mod common_elements;
 mod error_page;
 mod main_page;
+mod settings_page;
 mod talisman_page;
 
+use std::collections::HashMap;
+
 use crate::{
-    armor_ron::save_talismans_to_file,
+    armor_and_skills::save_talismans_to_file,
     build_search::{pre_selection_then_brute_force_search, Build},
+    locale::{get_locales, Locale},
 };
 use crate::{
-    armor_ron::{get_armor_list, get_talismans, Armor, Gender, Skill},
+    armor_and_skills::{get_armor_list, get_talismans, Armor, Gender, Skill},
     build_search::Jewels,
 };
 use iced::{button, pick_list, scrollable, slider, text_input, Element, Sandbox};
@@ -16,7 +20,7 @@ use iced::{button, pick_list, scrollable, slider, text_input, Element, Sandbox};
 use main_page::MainPage;
 use talisman_page::TalismanPage;
 
-use self::error_page::get_error_page;
+use self::{error_page::get_error_page, settings_page::SettingsPage};
 
 struct WishField {
     state_pick_list: pick_list::State<Skill>,
@@ -104,17 +108,25 @@ pub struct MainApp {
 
     state_save_talismans_button: button::State,
     state_discard_talismans_button: button::State,
+
+    state_settings_button: button::State,
+
+    locales: HashMap<String, Locale>,
+    selected_locale: String,
+
+    state_buttons_locale: Vec<button::State>,
 }
 
-#[derive(Clone)]
-enum RabError {
+#[derive(Debug, Clone)]
+pub enum RabError {
     ArmorFiles,
 }
 
-#[derive(Clone)]
-enum Page {
+#[derive(Debug, Clone)]
+pub enum Page {
     Main,
     Talisman,
+    Settings,
     Err(String, RabError),
 }
 
@@ -133,7 +145,6 @@ pub enum Message {
     Search,
     ArmorDesc(Option<(Armor, [Option<Skill>; 3])>),
     FilterChanged(String),
-    ToggleTalisman,
     GenderChanged(Gender),
     WeaponSlotChanged(usize, u8),
     ViewWeaponJewel(Jewels),
@@ -151,6 +162,8 @@ pub enum Message {
     AddTalisman,
     SaveTalismans,
     DiscardTalismans,
+    ChangePage(Page),
+    LocaleChanged(String),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -160,6 +173,8 @@ const LEGS_PATH: &str = "armors/legs.ron";
 const CHESTS_PATH: &str = "armors/chests.ron";
 
 const TALISMANS_PATH: &str = "talismans.ron";
+
+const LOCALE_DIR_PATH: &str = "locale";
 
 impl MainApp {
     fn clear_talisman_editor(&mut self) {
@@ -206,6 +221,24 @@ impl Sandbox for MainApp {
                 (vec![], vec![], vec![], vec![], vec![])
             }
         };
+
+        let locales = match get_locales(LOCALE_DIR_PATH) {
+            Ok(locales) => locales,
+            Err(err) => {
+                println!(
+                    "Error with localization files at {}\n{}",
+                    LOCALE_DIR_PATH, err
+                );
+                HashMap::with_capacity(0)
+            }
+        };
+
+        let selected_locale = "English".to_string();
+
+        *super::LOCALE.lock().unwrap() = locales.get(&selected_locale).cloned();
+
+        let state_buttons_locale = vec![Default::default(); locales.len()];
+
         Self {
             wish_fields: vec![WishField::default()],
 
@@ -222,6 +255,11 @@ impl Sandbox for MainApp {
             selected_gender: Gender::Female,
 
             page,
+
+            locales,
+            selected_locale,
+
+            state_buttons_locale,
 
             ..Self::default()
         }
@@ -280,10 +318,6 @@ impl Sandbox for MainApp {
                     })
                     .collect();
             }
-            Message::ToggleTalisman => match self.page {
-                Page::Main => self.page = Page::Talisman,
-                _ => self.page = Page::Main,
-            },
             Message::GenderChanged(gender) => self.selected_gender = gender,
             Message::WeaponSlotChanged(index, value) => {
                 self.states_values_slider_weapon_slot[index].1 = value
@@ -391,6 +425,11 @@ impl Sandbox for MainApp {
                 self.talismans = talismans;
                 self.states_talisman_button = states_talisman_button;
             }
+            Message::ChangePage(page) => self.page = page,
+            Message::LocaleChanged(new_locale) => {
+                *super::LOCALE.lock().unwrap() = self.locales.get(&new_locale).cloned();
+                self.selected_locale = new_locale;
+            }
         }
     }
 
@@ -401,6 +440,7 @@ impl Sandbox for MainApp {
             // I don't know if this is possible to give this function
             // just a &str. The compiler complains about lifetimes.
             Page::Err(msg, _) => get_error_page(msg.clone()),
+            Page::Settings => self.get_settings_page(),
         }
     }
 }

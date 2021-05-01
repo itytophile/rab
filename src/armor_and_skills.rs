@@ -155,7 +155,7 @@ pub enum Skill {
     Slugger,
     SpecialAmmoBoost,
     Agitator,
-    DevineBlessing,
+    DivineBlessing,
     Geologist,
     HungerResistance,
     CriticalElement,
@@ -178,7 +178,6 @@ pub enum Skill {
     LeapofFaith,
     DragonResistance,
     WaterResistance,
-    DivineBlessing,
     RecoverySpeed,
     SpeedSharpening,
     MuckResistance,
@@ -208,6 +207,7 @@ pub enum Skill {
     MastersTouch,
     RapidFireUp,
     CarvingPro,
+    Steadiness,
 }
 
 use Skill::*;
@@ -218,9 +218,11 @@ impl Default for Skill {
     }
 }
 
+use crate::locale::Localization;
+
 impl Display for Skill {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", self.apply_locale(&*crate::LOCALE.lock().unwrap()))
     }
 }
 
@@ -231,7 +233,7 @@ impl Skill {
     pub fn get_limit(&self) -> u8 {
         self.get_skill_desc().limit
     }
-    pub const ALL: [Skill; 107] = [
+    pub const ALL: [Skill; 108] = [
         Botanist,
         DefenseBoost,
         ItemProlonger,
@@ -286,7 +288,7 @@ impl Skill {
         Slugger,
         SpecialAmmoBoost,
         Agitator,
-        DevineBlessing,
+        DivineBlessing,
         Geologist,
         HungerResistance,
         CriticalElement,
@@ -339,6 +341,7 @@ impl Skill {
         MastersTouch,
         RapidFireUp,
         CarvingPro,
+        Steadiness,
     ];
     fn get_skill_desc(&self) -> SkillDesc {
         match self {
@@ -612,11 +615,6 @@ impl Skill {
                 jewel_size: Some(2),
             },
 
-            DevineBlessing => SkillDesc {
-                limit: 3,
-                jewel_size: Some(2),
-            },
-
             Geologist => SkillDesc {
                 limit: 3,
                 jewel_size: Some(1),
@@ -867,6 +865,10 @@ impl Skill {
             },
             CarvingPro => SkillDesc {
                 limit: 1,
+                jewel_size: Some(1),
+            },
+            Steadiness => SkillDesc {
+                limit: 2,
                 jewel_size: Some(1),
             },
         }

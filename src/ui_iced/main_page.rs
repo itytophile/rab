@@ -5,18 +5,15 @@ use iced::{
 };
 
 use crate::{
-    armor_ron::{Armor, Gender, Skill},
+    armor_and_skills::{Armor, Gender, Skill},
     build_search::Jewels,
     style_iced,
 };
 
-use super::{
-    common_elements::{
+use super::{MainApp, Message, Page, common_elements::{
         get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
         COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
-    },
-    MainApp, Message,
-};
+    }};
 
 pub trait MainPage {
     fn get_main_page(&mut self) -> Element<Message>;
@@ -71,7 +68,7 @@ impl MainPage for MainApp {
             Text::new("Manage talismans"),
         )
         .style(style_iced::Button::Talisman)
-        .on_press(Message::ToggleTalisman);
+        .on_press(Message::ChangePage(Page::Talisman));
         let search_button = Button::new(&mut self.state_search_button, Text::new("Search builds"))
             .style(style_iced::Button::Search)
             .on_press(Message::Search);
@@ -125,11 +122,24 @@ impl MainPage for MainApp {
             .push(weapon_jewels_row)
             .push(sliders_weapon_slot)
             .align_items(Align::Center);
-        let column_right = get_column_builds_found(
-            &mut self.state_builds_scroll,
-            &self.builds,
-            &mut self.states_build_button,
-        );
+        let column_right = Column::new()
+            .spacing(10)
+            .push(
+                get_column_builds_found(
+                    &mut self.state_builds_scroll,
+                    &self.builds,
+                    &mut self.states_build_button,
+                )
+                .height(Length::Fill),
+            )
+            .push(
+                Row::new()
+                    .push(Space::with_width(Length::Fill))
+                    .push(Button::new(
+                        &mut self.state_settings_button,
+                        Text::new("Settings"),
+                    ).on_press(Message::ChangePage(Page::Settings))),
+            );
         Row::new()
             .padding(5)
             .push(column_left.width(Length::Units(LEFT_COLUMN_WIDTH)))
