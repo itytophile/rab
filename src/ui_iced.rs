@@ -4,7 +4,7 @@ mod main_page;
 mod settings_page;
 mod talisman_page;
 
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use crate::{
     armor_and_skills::save_talismans_to_file,
@@ -198,6 +198,24 @@ fn get_all_armors_from_file(
     ))
 }
 
+fn clean_string(s: &str) -> String {
+    s.to_lowercase()
+        .chars()
+        .map(|c| match c {
+            'é' | 'è' | 'ë' | 'ê' => 'e',
+            'à' | 'ä' | 'â' => 'a',
+            'ö' | 'ô' => 'o',
+            'ü' | 'û' => 'u',
+            'ï' | 'î' => 'i',
+            _ => c,
+        })
+        .collect()
+}
+
+fn alphabetical_sort(a: &Skill, b: &Skill, locale: &Option<Locale>) -> Ordering {
+    clean_string(&a.apply_locale(locale)).cmp(&clean_string(&b.apply_locale(locale)))
+}
+
 impl Sandbox for MainApp {
     type Message = Message;
 
@@ -243,8 +261,7 @@ impl Sandbox for MainApp {
         let locale = locales.get(&selected_locale).cloned();
 
         let mut sorted_wish_choices = Skill::ALL.to_vec();
-        sorted_wish_choices
-            .sort_unstable_by(|a, b| a.apply_locale(&locale).cmp(&b.apply_locale(&locale)));
+        sorted_wish_choices.sort_unstable_by(|a, b| alphabetical_sort(a, b, &locale));
 
         let filtered_wish_choices = sorted_wish_choices.clone();
 
@@ -442,8 +459,8 @@ impl Sandbox for MainApp {
             Message::LocaleChanged(new_locale) => {
                 let locale = self.locales.get(&new_locale).cloned();
                 self.sorted_wish_choices
-                    .sort_unstable_by(|a, b| a.apply_locale(&locale).cmp(&b.apply_locale(&locale)));
-                
+                    .sort_unstable_by(|a, b| alphabetical_sort(a, b, &locale));
+
                 *super::LOCALE.lock().unwrap() = locale;
 
                 self.filtered_wish_choices = self
