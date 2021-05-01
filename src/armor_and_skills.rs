@@ -233,7 +233,7 @@ impl Skill {
     pub fn get_limit(&self) -> u8 {
         self.get_skill_desc().limit
     }
-    pub const ALL: [Skill; 108] = [
+    pub const ALL: [Skill; 107] = [
         Botanist,
         DefenseBoost,
         ItemProlonger,
@@ -288,7 +288,6 @@ impl Skill {
         Slugger,
         SpecialAmmoBoost,
         Agitator,
-        DivineBlessing,
         Geologist,
         HungerResistance,
         CriticalElement,
