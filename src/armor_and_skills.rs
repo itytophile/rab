@@ -660,7 +660,7 @@ impl Skill {
             },
 
             WindAlignment => SkillDesc {
-                limit: 3,
+                limit: 5,
                 jewel_size: None,
             },
 
