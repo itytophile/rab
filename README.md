@@ -9,7 +9,24 @@ WARNING: The binary (the .exe file) must be next to the "armors" folder for it t
 
 If you use Windows or Linux, you can download the binary here https://github.com/itytophile/rab/releases
 
-FOR WINDOWS USER: If RAB doesn't work, maybe you need to install [Visual C++](https://support.microsoft.com/en-us/topic/the-latest-supported-visual-c-downloads-2647da03-1eea-4433-9aff-95f26a218cc0) (check the exe files under "Visual Studio 2015, 2017 and 2019").
+FOR WINDOWS USERS: If RAB doesn't work, maybe you need to install [Visual C++](https://support.microsoft.com/en-us/topic/the-latest-supported-visual-c-downloads-2647da03-1eea-4433-9aff-95f26a218cc0) (check the exe files under "Visual Studio 2015, 2017 and 2019").
+## Need help for localization!
+At the moment, the skills and armors are translated into
+- English
+- Polish
+- French
+- German
+- Italian
+- Russian
+- Spanish
+
+I need help for translating the UI in all these languages except French (English is done but as I am not a native speaker I can't really say this is perfect).
+
+Unfortunately Chinese, Korean and Japanese can't be supported yet. The GUI library (iced) I use don't support them.
+
+If you are interested, you can check how a localization is done here: https://github.com/itytophile/rab-locale
+
+It should be understandable, you can compare the French and English localization to see how this is done.
 ## Screenshots
 Choose the wished skills and RAB searches compatible builds for you:
 
