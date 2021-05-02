@@ -4,25 +4,22 @@ mod main_page;
 mod settings_page;
 mod talisman_page;
 
-use std::{cmp::Ordering, collections::HashMap};
+use std::collections::HashMap;
 
 use crate::{
-    armor_and_skills::save_talismans_to_file,
-    build_search::{pre_selection_then_brute_force_search, Build},
+    armor_and_skills::{
+        get_armor_list, get_talismans, save_talismans_to_file, Armor, Gender, Skill,
+    },
+    build_search::{pre_selection_then_brute_force_search, Build, Jewels},
     locale::{get_locales, Locale},
 };
-use crate::{
-    armor_and_skills::{get_armor_list, get_talismans, Armor, Gender, Skill},
-    build_search::Jewels,
-};
+
 use iced::{button, pick_list, scrollable, slider, text_input, Element, Sandbox};
 
-use main_page::MainPage;
-use talisman_page::TalismanPage;
-
-use self::{error_page::get_error_page, settings_page::SettingsPage};
-
-use crate::locale::Localization;
+use self::{
+    error_page::get_error_page, main_page::MainPage, settings_page::SettingsPage,
+    talisman_page::TalismanPage,
+};
 
 struct WishField {
     state_pick_list: pick_list::State<Skill>,
@@ -198,23 +195,7 @@ fn get_all_armors_from_file(
     ))
 }
 
-fn clean_string(s: &str) -> String {
-    s.to_lowercase()
-        .chars()
-        .map(|c| match c {
-            'é' | 'è' | 'ë' | 'ê' => 'e',
-            'à' | 'ä' | 'â' => 'a',
-            'ö' | 'ô' => 'o',
-            'ü' | 'û' => 'u',
-            'ï' | 'î' => 'i',
-            _ => c,
-        })
-        .collect()
-}
-
-fn alphabetical_sort(a: &Skill, b: &Skill, locale: &Option<Locale>) -> Ordering {
-    clean_string(&a.apply_locale(locale)).cmp(&clean_string(&b.apply_locale(locale)))
-}
+use lexical_sort::natural_lexical_cmp;
 
 impl Sandbox for MainApp {
     type Message = Message;
@@ -258,14 +239,13 @@ impl Sandbox for MainApp {
 
         let state_buttons_locale = vec![Default::default(); locales.len()];
 
-        let locale = locales.get(&selected_locale).cloned();
+        *super::LOCALE.lock().unwrap() = locales.get(&selected_locale).cloned();
 
         let mut sorted_wish_choices = Skill::ALL.to_vec();
-        sorted_wish_choices.sort_unstable_by(|a, b| alphabetical_sort(a, b, &locale));
+        sorted_wish_choices
+            .sort_unstable_by(|a, b| natural_lexical_cmp(&a.to_string(), &b.to_string()));
 
         let filtered_wish_choices = sorted_wish_choices.clone();
-
-        *super::LOCALE.lock().unwrap() = locale;
 
         Self {
             wish_fields: vec![WishField::default()],
@@ -343,8 +323,8 @@ impl Sandbox for MainApp {
                     .filter(|skill| {
                         skill
                             .to_string()
-                            .to_ascii_lowercase()
-                            .contains(&self.value_filter_text_input.to_ascii_lowercase())
+                            .to_lowercase()
+                            .contains(&self.value_filter_text_input.to_lowercase())
                     })
                     .collect();
             }
@@ -457,11 +437,10 @@ impl Sandbox for MainApp {
             }
             Message::ChangePage(page) => self.page = page,
             Message::LocaleChanged(new_locale) => {
-                let locale = self.locales.get(&new_locale).cloned();
-                self.sorted_wish_choices
-                    .sort_unstable_by(|a, b| alphabetical_sort(a, b, &locale));
+                *super::LOCALE.lock().unwrap() = self.locales.get(&new_locale).cloned();
 
-                *super::LOCALE.lock().unwrap() = locale;
+                self.sorted_wish_choices
+                    .sort_unstable_by(|a, b| natural_lexical_cmp(&a.to_string(), &b.to_string()));
 
                 self.filtered_wish_choices = self
                     .sorted_wish_choices
