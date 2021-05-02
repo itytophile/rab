@@ -3,6 +3,7 @@ mod build_search;
 mod locale;
 mod style_iced;
 mod ui_iced;
+mod profile;
 
 use std::sync::Mutex;
 

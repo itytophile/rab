@@ -12,6 +12,7 @@ use crate::{
     },
     build_search::{pre_selection_then_brute_force_search, Build, Jewels},
     locale::{get_locales, Locale},
+    profile::{get_profile, save_profile},
 };
 
 use iced::{button, pick_list, scrollable, slider, text_input, Element, Sandbox};
@@ -115,6 +116,8 @@ pub struct MainApp {
     selected_locale: String,
 
     state_buttons_locale: Vec<button::State>,
+
+    profile: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone)]
@@ -173,6 +176,7 @@ const LEGS_PATH: &str = "armors/legs.ron";
 const CHESTS_PATH: &str = "armors/chests.ron";
 
 const TALISMANS_PATH: &str = "talismans.ron";
+const PROFILE_PATH: &str = "profile.ron";
 
 const LOCALE_DIR_PATH: &str = "locale";
 
@@ -228,14 +232,31 @@ impl Sandbox for MainApp {
             Ok(locales) => locales,
             Err(err) => {
                 println!(
-                    "Error with localization files at {}\n{}",
+                    "Error with localization files at {}\n{}\nWARNING: no locale loaded.",
                     LOCALE_DIR_PATH, err
                 );
                 HashMap::with_capacity(0)
             }
         };
 
-        let selected_locale = "English".to_string();
+        let profile = match get_profile(PROFILE_PATH) {
+            Ok(map) => {
+                println!("Profile file succesfully loaded.");
+                map
+            }
+            Err(err) => {
+                println!(
+                    "Can't read the profile file:\n{}\nEmpty profile loaded.",
+                    err
+                );
+                Default::default()
+            }
+        };
+
+        let selected_locale = profile
+            .get("lang")
+            .cloned()
+            .unwrap_or("English".to_string());
 
         let state_buttons_locale = vec![Default::default(); locales.len()];
 
@@ -269,6 +290,8 @@ impl Sandbox for MainApp {
             selected_locale,
 
             state_buttons_locale,
+
+            profile,
 
             ..Self::default()
         }
@@ -437,8 +460,14 @@ impl Sandbox for MainApp {
             }
             Message::ChangePage(page) => self.page = page,
             Message::LocaleChanged(new_locale) => {
+                self.profile.insert("lang".to_string(), new_locale.clone());
                 *super::LOCALE.lock().unwrap() = self.locales.get(&new_locale).cloned();
-
+                // after the unwrap(), if there is a mystical problem with the mutex
+                // it is better to not save the locale
+                match save_profile(&self.profile, PROFILE_PATH) {
+                    Ok(file) => println!("Profile saved to {}", file),
+                    Err(err) => println!("Can't save profile:\n{}", err),
+                };
                 self.sorted_wish_choices
                     .sort_unstable_by(|a, b| natural_lexical_cmp(&a.to_string(), &b.to_string()));
 
