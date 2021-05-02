@@ -141,7 +141,6 @@ pub enum Skill {
     LoadShells,
     ParalysisAttack,
     PierceUp,
-    AimBooster,
     SleepAttack,
     BlightResistance,
     CriticalDraw,
@@ -216,6 +215,9 @@ pub enum Skill {
     RapidFireUp,
     CarvingPro,
     Steadiness,
+    IceResistance,
+    ThunderResistance,
+    CarvingMaster,
 }
 
 use Skill::*;
@@ -239,7 +241,7 @@ impl Skill {
     pub fn get_limit(&self) -> u8 {
         self.get_skill_desc().limit
     }
-    pub const ALL: [Skill; 107] = [
+    pub const ALL: [Skill; 109] = [
         Botanist,
         DefenseBoost,
         ItemProlonger,
@@ -272,7 +274,6 @@ impl Skill {
         LoadShells,
         ParalysisAttack,
         PierceUp,
-        AimBooster,
         SleepAttack,
         BlightResistance,
         CriticalDraw,
@@ -347,6 +348,9 @@ impl Skill {
         RapidFireUp,
         CarvingPro,
         Steadiness,
+        IceResistance,
+        ThunderResistance,
+        CarvingMaster,
     ];
     fn get_skill_desc(&self) -> SkillDesc {
         match self {
@@ -508,11 +512,6 @@ impl Skill {
             PierceUp => SkillDesc {
                 limit: 3,
                 jewel_size: Some(3),
-            },
-
-            AimBooster => SkillDesc {
-                limit: 3,
-                jewel_size: Some(2),
             },
 
             SleepAttack => SkillDesc {
@@ -875,6 +874,18 @@ impl Skill {
             Steadiness => SkillDesc {
                 limit: 2,
                 jewel_size: Some(1),
+            },
+            IceResistance => SkillDesc {
+                limit: 3,
+                jewel_size: Some(1),
+            },
+            ThunderResistance => SkillDesc {
+                limit: 3,
+                jewel_size: Some(1),
+            },
+            CarvingMaster => SkillDesc {
+                limit: 1,
+                jewel_size: None,
             },
         }
     }
