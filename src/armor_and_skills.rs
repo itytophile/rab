@@ -9,6 +9,8 @@ use std::{
     fs::{self, File},
 };
 
+use crate::locale::Localization;
+
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub enum Gender {
     Female,
@@ -35,6 +37,12 @@ pub struct Armor {
     pub ice: i8,
     pub dragon: i8,
     pub gender: Gender,
+}
+
+impl Display for Armor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.apply_locale(&*crate::LOCALE.lock().unwrap()))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -217,8 +225,6 @@ impl Default for Skill {
         Botanist
     }
 }
-
-use crate::locale::Localization;
 
 impl Display for Skill {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

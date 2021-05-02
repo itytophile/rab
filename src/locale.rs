@@ -3,13 +3,14 @@ use serde::Deserialize;
 use std::{collections::HashMap, fs::File};
 use std::{fmt::Display, fs};
 
-use crate::armor_and_skills::Skill;
+use crate::armor_and_skills::{Armor, Skill};
 
 #[derive(Deserialize, Clone)]
 pub struct Locale {
     name: String,
     skills: HashMap<Skill, String>,
     interface: HashMap<InterfaceSymbol, String>,
+    armors: HashMap<String, String>,
 }
 
 pub fn get_locales(directory_path: &str) -> Result<HashMap<String, Locale>, Error> {
@@ -41,13 +42,21 @@ impl Localization for Skill {
     fn apply_locale(&self, locale: &Option<Locale>) -> String {
         if let Some(locale) = locale {
             if let Some(localized) = locale.skills.get(self) {
-                localized.clone()
-            } else {
-                format!("{:?}", self)
+                return localized.clone();
             }
-        } else {
-            format!("{:?}", self)
         }
+        format!("{:?}", self)
+    }
+}
+
+impl Localization for Armor {
+    fn apply_locale(&self, locale: &Option<Locale>) -> String {
+        if let Some(locale) = locale {
+            if let Some(localized) = locale.armors.get(&self.name) {
+                return localized.clone();
+            }
+        }
+        self.name.clone()
     }
 }
 

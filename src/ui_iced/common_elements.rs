@@ -159,7 +159,7 @@ fn build_part_to_button<'a>(
     let button = Button::new(
         state,
         Container::new(Text::new(if let Some((armor, _)) = build_part {
-            armor.name.clone()
+            armor.to_string()
         } else {
             InterfaceSymbol::Free.to_string()
         }))

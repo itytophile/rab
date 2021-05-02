@@ -164,7 +164,7 @@ fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
         let mut col_armor_stats = Column::new()
             .align_items(Align::Center)
             .spacing(5)
-            .push(Text::new(&armor.name));
+            .push(Text::new(armor.to_string()));
         for (style, name, value) in array::IntoIter::new([
             (
                 style_iced::Container::Defense,
