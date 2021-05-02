@@ -22,7 +22,7 @@ At the moment, the skills and armors are translated into
 
 I need help for translating the UI in all these languages except French (English is done but as I am not a native speaker I can't really say this is perfect).
 
-Unfortunately Chinese, Korean and Japanese can't be supported yet. The GUI library (iced) I use don't support them.
+Unfortunately Chinese, Korean and Japanese can't be supported yet. The GUI library (iced) I use doesn't support them.
 
 If you are interested, you can check how a localization is done here: https://github.com/itytophile/rab-locale
 
