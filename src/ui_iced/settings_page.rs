@@ -1,4 +1,4 @@
-use iced::{Button, Column, Element, Length, Row, Space, Text};
+use iced::{Align, Button, Column, Container, Element, Length, Row, Space, Text};
 
 use crate::locale::InterfaceSymbol;
 
@@ -17,7 +17,12 @@ impl SettingsPage for MainApp {
             .keys()
             .zip(self.state_buttons_locale.iter_mut())
         {
-            let button = Button::new(state, Text::new(locale_name));
+            let button = Button::new(
+                state,
+                Container::new(Text::new(locale_name))
+                    .width(Length::Units(100))
+                    .center_x(),
+            );
             locales_choice = locales_choice.push(if locale_name != &self.selected_locale {
                 button.on_press(Message::LocaleChanged(locale_name.clone()))
             } else {
@@ -26,12 +31,12 @@ impl SettingsPage for MainApp {
         }
 
         Column::new()
+            .align_items(Align::Center)
             .padding(5)
             .push(
-                Row::new()
-                    .push(Space::with_width(Length::Fill))
-                    .push(locales_choice)
-                    .height(Length::Fill),
+                Container::new(locales_choice)
+                    .height(Length::Fill)
+                    .center_y(),
             )
             .push(
                 Row::new().push(Space::with_width(Length::Fill)).push(
