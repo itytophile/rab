@@ -8,8 +8,6 @@ Localization files here: https://github.com/itytophile/rab-locale
 WARNING: The binary (the .exe file) must be next to the "armors" folder for it to work!!!!
 
 If you use Windows or Linux, you can download the binary here https://github.com/itytophile/rab/releases
-
-FOR WINDOWS USERS: If RAB doesn't work, maybe you need to install [Visual C++](https://support.microsoft.com/en-us/topic/the-latest-supported-visual-c-downloads-2647da03-1eea-4433-9aff-95f26a218cc0) (check the exe files under "Visual Studio 2015, 2017 and 2019").
 ## Need help for localization!
 At the moment, the skills and armors are translated into
 - English
