@@ -1,7 +1,7 @@
 mod common_elements;
 mod error_page;
-mod main_page;
 mod lang_page;
+mod main_page;
 mod talisman_page;
 
 use std::collections::HashMap;
@@ -19,7 +19,7 @@ use crate::{
 use iced::{button, pick_list, scrollable, slider, text_input, Container, Element, Sandbox};
 
 use self::{
-    error_page::get_error_page, main_page::MainPage, lang_page::LangPage,
+    error_page::get_error_page, lang_page::LangPage, main_page::MainPage,
     talisman_page::TalismanPage,
 };
 
@@ -121,7 +121,7 @@ pub struct MainApp {
     profile: HashMap<String, String>,
 
     theme: style_iced::Theme,
-    state_theme_button: button::State
+    state_theme_button: button::State,
 }
 
 #[derive(Debug, Clone)]
@@ -191,6 +191,13 @@ impl MainApp {
             *slider_value = 0
         }
         self.edit_wish_fields.clear();
+    }
+
+    fn save_profile(&self) {
+        match save_profile(&self.profile, PROFILE_PATH) {
+            Ok(file) => println!("Profile saved to {}", file),
+            Err(err) => println!("Can't save profile:\n{}", err),
+        };
     }
 }
 fn get_all_armors_from_file(
@@ -263,6 +270,11 @@ impl Sandbox for MainApp {
             .cloned()
             .unwrap_or("English".to_string());
 
+        let theme = match profile.get("theme").unwrap_or(&"dark".to_string()).as_str() {
+            "light" => style_iced::Theme::Light,
+            _ => style_iced::Theme::Dark,
+        };
+
         let state_buttons_locale = vec![Default::default(); locales.len()];
 
         *super::LOCALE.lock().unwrap() = locales.get(&selected_locale).cloned();
@@ -297,6 +309,8 @@ impl Sandbox for MainApp {
             state_buttons_locale,
 
             profile,
+
+            theme,
 
             ..Self::default()
         }
@@ -469,10 +483,7 @@ impl Sandbox for MainApp {
                 *super::LOCALE.lock().unwrap() = self.locales.get(&new_locale).cloned();
                 // after the unwrap(), if there is a mystical problem with the mutex
                 // it is better to not save the locale
-                match save_profile(&self.profile, PROFILE_PATH) {
-                    Ok(file) => println!("Profile saved to {}", file),
-                    Err(err) => println!("Can't save profile:\n{}", err),
-                };
+                self.save_profile();
                 self.sorted_wish_choices
                     .sort_unstable_by(|a, b| natural_lexical_cmp(&a.to_string(), &b.to_string()));
 
@@ -492,16 +503,24 @@ impl Sandbox for MainApp {
             }
             Message::ToggleTheme => {
                 self.theme = match self.theme {
-                    style_iced::Theme::Dark => style_iced::Theme::Light,
-                    _ => style_iced::Theme::Dark,
-                }
+                    style_iced::Theme::Dark => {
+                        self.profile
+                            .insert("theme".to_string(), "light".to_string());
+                        style_iced::Theme::Light
+                    }
+                    _ => {
+                        self.profile.insert("theme".to_string(), "dark".to_string());
+                        style_iced::Theme::Dark
+                    }
+                };
+                self.save_profile()
             }
         }
     }
 
     fn view(&mut self) -> Element<Message> {
         let theme = self.theme;
-        
+
         let container = Container::new(match &self.page {
             Page::Main => self.get_main_page(),
             Page::Talisman => self.get_talisman_page(),
@@ -513,7 +532,8 @@ impl Sandbox for MainApp {
 
         match theme {
             style_iced::Theme::Dark => container.style(style_iced::Container::DarkTheme),
-            style_iced::Theme::Light => container
-        }.into()
+            style_iced::Theme::Light => container,
+        }
+        .into()
     }
 }
