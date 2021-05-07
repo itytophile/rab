@@ -6,7 +6,7 @@ Armor files used by RAB here: https://github.com/itytophile/monster-hunter-rise-
 
 Localization files here: https://github.com/itytophile/rab-locale
 
-Icons from Font Awesome https://fontawesome.com/license
+Icons from Font Awesome https://fontawesome.com/license/free
 
 ## Installation
 
