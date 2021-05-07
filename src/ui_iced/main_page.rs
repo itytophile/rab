@@ -1,7 +1,8 @@
 use std::{array, cmp::Ordering};
 
 use iced::{
-    Align, Button, Column, Container, Element, Length, Radio, Row, Scrollable, Slider, Space, Text,
+    Align, Button, Column, Container, Element, Length, Radio, Row, Scrollable, Slider, Space, Svg,
+    Text,
 };
 
 use crate::{
@@ -143,13 +144,33 @@ impl MainPage for MainApp {
                 .height(Length::Fill),
             )
             .push(
-                Row::new().push(Space::with_width(Length::Fill)).push(
-                    Button::new(
-                        &mut self.state_settings_button,
-                        Text::new(InterfaceSymbol::Settings),
+                Row::new()
+                    .spacing(BUTTON_SPACING)
+                    .push(Space::with_width(Length::Fill))
+                    .push(
+                        Button::new(
+                            &mut self.state_theme_button,
+                            match self.theme {
+                                style_iced::Theme::Dark => Svg::from_path(format!(
+                                    "{}/src/icons/sun-solid.svg",
+                                    env!("CARGO_MANIFEST_DIR")
+                                )),
+                                style_iced::Theme::Light => Svg::from_path(format!(
+                                    "{}/src/icons/moon-solid.svg",
+                                    env!("CARGO_MANIFEST_DIR")
+                                )),
+                            }
+                            .width(Length::Units(20)),
+                        )
+                        .on_press(Message::ToggleTheme),
                     )
-                    .on_press(Message::ChangePage(Page::Settings)),
-                ),
+                    .push(
+                        Button::new(
+                            &mut self.state_settings_button,
+                            Text::new(InterfaceSymbol::Settings),
+                        )
+                        .on_press(Message::ChangePage(Page::Settings)),
+                    ),
             );
         Row::new()
             .padding(5)

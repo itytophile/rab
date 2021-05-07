@@ -85,7 +85,7 @@ impl TalismanPage for MainApp {
                             &mut self.state_edit_add_skill_button,
                         ))
                         .padding(10)
-                        .style(style_iced::Container::Talisman)
+                        .style(style_iced::Container::Talisman(self.theme))
                         .max_height(350),
                     )
                     .push(
@@ -128,7 +128,7 @@ impl TalismanPage for MainApp {
                     .push(
                         Container::new(talisman_desc)
                             .padding(10)
-                            .style(style_iced::Container::Talisman),
+                            .style(style_iced::Container::Talisman(self.theme)),
                     )
                     .push(
                         Button::new(

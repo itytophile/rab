@@ -1,5 +1,17 @@
 use iced::{button, container, Background, Color, Vector};
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum Theme {
+    Dark,
+    Light,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Theme::Dark
+    }
+}
+
 pub enum Container {
     Fire,
     Thunder,
@@ -7,7 +19,8 @@ pub enum Container {
     Water,
     Dragon,
     Defense,
-    Talisman,
+    Talisman(Theme),
+    DarkTheme,
 }
 
 impl container::StyleSheet for Container {
@@ -48,9 +61,23 @@ impl container::StyleSheet for Container {
                 background: Some(Background::Color(Color::from_rgb(0.7, 0.7, 0.7))),
                 ..container::Style::default()
             },
-            Container::Talisman => container::Style {
-                border_radius: 10.0,
-                background: Some(Background::Color(Color::from_rgb(0.95, 0.95, 0.95))),
+            Container::Talisman(theme) => match theme {
+                Theme::Dark => container::Style {
+                    border_radius: 10.0,
+                    text_color: Some(Color::WHITE),
+                    background: Some(Background::Color(Color::from_rgb(0.5, 0.5, 0.5))),
+                    ..container::Style::default()
+                },
+                Theme::Light => container::Style {
+                    border_radius: 10.0,
+                    text_color: Some(Color::BLACK),
+                    background: Some(Background::Color(Color::from_rgb(0.95, 0.95, 0.95))),
+                    ..container::Style::default()
+                },
+            },
+            Container::DarkTheme => container::Style {
+                text_color: Some(Color::WHITE),
+                background: Some(Background::Color(Color::from_rgb(0.25, 0.25, 0.25))),
                 ..container::Style::default()
             },
         }

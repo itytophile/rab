@@ -13,7 +13,7 @@ keywords = ["monster", "hunter", "rise", "armor", "search"]
 [dependencies]
 serde = "1.0"
 ron = "0.6"
-iced = "0.3"
+iced = { version = "0.3", features = ["svg"] }
 itertools = "0.10"
 once_cell = "1.7"
 lexical-sort = "0.3"

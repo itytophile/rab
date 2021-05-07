@@ -13,9 +13,10 @@ use crate::{
     build_search::{pre_selection_then_brute_force_search, Build, Jewels},
     locale::{get_locales, Locale},
     profile::{get_profile, save_profile},
+    style_iced,
 };
 
-use iced::{button, pick_list, scrollable, slider, text_input, Element, Sandbox};
+use iced::{button, pick_list, scrollable, slider, text_input, Container, Element, Sandbox};
 
 use self::{
     error_page::get_error_page, main_page::MainPage, settings_page::SettingsPage,
@@ -118,6 +119,9 @@ pub struct MainApp {
     state_buttons_locale: Vec<button::State>,
 
     profile: HashMap<String, String>,
+
+    theme: style_iced::Theme,
+    state_theme_button: button::State
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +171,7 @@ pub enum Message {
     DiscardTalismans,
     ChangePage(Page),
     LocaleChanged(String),
+    ToggleTheme,
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -485,17 +490,30 @@ impl Sandbox for MainApp {
 
                 self.selected_locale = new_locale;
             }
+            Message::ToggleTheme => {
+                self.theme = match self.theme {
+                    style_iced::Theme::Dark => style_iced::Theme::Light,
+                    _ => style_iced::Theme::Dark,
+                }
+            }
         }
     }
 
     fn view(&mut self) -> Element<Message> {
-        match &self.page {
+        let theme = self.theme;
+        
+        let container = Container::new(match &self.page {
             Page::Main => self.get_main_page(),
             Page::Talisman => self.get_talisman_page(),
             // I don't know if this is possible to give this function
             // just a &str. The compiler complains about lifetimes.
             Page::Err(msg, _) => get_error_page(msg.clone()),
             Page::Settings => self.get_settings_page(),
-        }
+        });
+
+        match theme {
+            style_iced::Theme::Dark => container.style(style_iced::Container::DarkTheme),
+            style_iced::Theme::Light => container
+        }.into()
     }
 }
