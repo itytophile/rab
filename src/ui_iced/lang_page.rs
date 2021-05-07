@@ -4,12 +4,12 @@ use crate::locale::InterfaceSymbol;
 
 use super::{common_elements::COLUMN_SPACING, MainApp, Message, Page};
 
-pub trait SettingsPage {
-    fn get_settings_page(&mut self) -> Element<Message>;
+pub trait LangPage {
+    fn get_lang_page(&mut self) -> Element<Message>;
 }
 
-impl SettingsPage for MainApp {
-    fn get_settings_page(&mut self) -> Element<Message> {
+impl LangPage for MainApp {
+    fn get_lang_page(&mut self) -> Element<Message> {
         let mut locales_choice = Column::new().spacing(COLUMN_SPACING);
 
         for (locale_name, state) in self
@@ -41,7 +41,7 @@ impl SettingsPage for MainApp {
             .push(
                 Row::new().push(Space::with_width(Length::Fill)).push(
                     Button::new(
-                        &mut self.state_settings_button,
+                        &mut self.state_lang_button,
                         Text::new(InterfaceSymbol::Back),
                     )
                     .on_press(Message::ChangePage(Page::Main)),

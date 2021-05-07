@@ -160,16 +160,20 @@ impl MainPage for MainApp {
                                     env!("CARGO_MANIFEST_DIR")
                                 )),
                             }
-                            .width(Length::Units(20)),
+                            .width(Length::Units(30)),
                         )
                         .on_press(Message::ToggleTheme),
                     )
                     .push(
                         Button::new(
-                            &mut self.state_settings_button,
-                            Text::new(InterfaceSymbol::Settings),
+                            &mut self.state_lang_button,
+                            Svg::from_path(format!(
+                                "{}/src/icons/globe-europe-solid.svg",
+                                env!("CARGO_MANIFEST_DIR")
+                            ))
+                            .width(Length::Units(30)),
                         )
-                        .on_press(Message::ChangePage(Page::Settings)),
+                        .on_press(Message::ChangePage(Page::Lang)),
                     ),
             );
         Row::new()

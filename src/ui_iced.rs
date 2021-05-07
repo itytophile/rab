@@ -1,7 +1,7 @@
 mod common_elements;
 mod error_page;
 mod main_page;
-mod settings_page;
+mod lang_page;
 mod talisman_page;
 
 use std::collections::HashMap;
@@ -19,7 +19,7 @@ use crate::{
 use iced::{button, pick_list, scrollable, slider, text_input, Container, Element, Sandbox};
 
 use self::{
-    error_page::get_error_page, main_page::MainPage, settings_page::SettingsPage,
+    error_page::get_error_page, main_page::MainPage, lang_page::LangPage,
     talisman_page::TalismanPage,
 };
 
@@ -111,7 +111,7 @@ pub struct MainApp {
     state_save_talismans_button: button::State,
     state_discard_talismans_button: button::State,
 
-    state_settings_button: button::State,
+    state_lang_button: button::State,
 
     locales: HashMap<String, Locale>,
     selected_locale: String,
@@ -133,7 +133,7 @@ pub enum RabError {
 pub enum Page {
     Main,
     Talisman,
-    Settings,
+    Lang,
     Err(String, RabError),
 }
 
@@ -508,7 +508,7 @@ impl Sandbox for MainApp {
             // I don't know if this is possible to give this function
             // just a &str. The compiler complains about lifetimes.
             Page::Err(msg, _) => get_error_page(msg.clone()),
-            Page::Settings => self.get_settings_page(),
+            Page::Lang => self.get_lang_page(),
         });
 
         match theme {
