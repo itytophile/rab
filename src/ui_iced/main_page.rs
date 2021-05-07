@@ -1,8 +1,8 @@
 use std::{array, cmp::Ordering};
 
 use iced::{
-    Align, Button, Column, Container, Element, Length, Radio, Row, Scrollable, Slider, Space, Svg,
-    Text,
+    widget::svg::Handle, Align, Button, Column, Container, Element, Length, Radio, Row, Scrollable,
+    Slider, Space, Svg, Text,
 };
 
 use crate::{
@@ -151,13 +151,14 @@ impl MainPage for MainApp {
                         Button::new(
                             &mut self.state_theme_button,
                             match self.theme {
-                                style_iced::Theme::Dark => Svg::from_path(format!(
-                                    "{}/src/icons/sun-solid.svg",
-                                    env!("CARGO_MANIFEST_DIR")
+                                style_iced::Theme::Dark => Svg::new(Handle::from_memory(
+                                    // I'm scared of the to_vec(), maybe I need
+                                    // to create the vectors beforehand but
+                                    // I'm just praying the compiler to optimize it.
+                                    include_bytes!("icons/sun-solid.svg").to_vec(),
                                 )),
-                                style_iced::Theme::Light => Svg::from_path(format!(
-                                    "{}/src/icons/moon-solid.svg",
-                                    env!("CARGO_MANIFEST_DIR")
+                                style_iced::Theme::Light => Svg::new(Handle::from_memory(
+                                    include_bytes!("icons/moon-solid.svg").to_vec(),
                                 )),
                             }
                             .width(Length::Units(30)),
@@ -167,9 +168,8 @@ impl MainPage for MainApp {
                     .push(
                         Button::new(
                             &mut self.state_lang_button,
-                            Svg::from_path(format!(
-                                "{}/src/icons/globe-europe-solid.svg",
-                                env!("CARGO_MANIFEST_DIR")
+                            Svg::new(Handle::from_memory(
+                                include_bytes!("icons/globe-europe-solid.svg").to_vec(),
                             ))
                             .width(Length::Units(30)),
                         )
