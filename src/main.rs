@@ -1,13 +1,13 @@
 mod armor_and_skills;
 mod build_search;
 mod locale;
+mod profile;
 mod style_iced;
 mod ui_iced;
-mod profile;
 
 use std::sync::Mutex;
 
-use iced::{Sandbox, Settings};
+use iced::{Application, Settings};
 use locale::Locale;
 use once_cell::sync::Lazy;
 

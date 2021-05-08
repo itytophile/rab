@@ -2,7 +2,7 @@ use std::{array, cmp::Ordering};
 
 use iced::{
     widget::svg::Handle, Align, Button, Column, Container, Element, Length, Radio, Row, Scrollable,
-    Slider, Space, Svg, Text,
+    Slider, Space, Svg, Text, VerticalAlignment,
 };
 
 use crate::{
@@ -145,8 +145,27 @@ impl MainPage for MainApp {
             )
             .push(
                 Row::new()
+                    .height(Length::Units(40))
                     .spacing(BUTTON_SPACING)
                     .push(Space::with_width(Length::Fill))
+                    .push(
+                        Button::new(
+                            &mut self.state_update_button,
+                            Row::new()
+                                .spacing(BUTTON_SPACING)
+                                .height(Length::Fill)
+                                .push(Svg::new(Handle::from_memory(
+                                    include_bytes!("icons/cloud-download-alt-solid.svg").to_vec(),
+                                )))
+                                .push(
+                                    Text::new("Update armors")
+                                        .height(Length::Fill)
+                                        .vertical_alignment(VerticalAlignment::Center),
+                                ),
+                        )
+                        .on_press(Message::UpdateArmors)
+                        .height(Length::Fill),
+                    )
                     .push(
                         Button::new(
                             &mut self.state_theme_button,
@@ -160,9 +179,9 @@ impl MainPage for MainApp {
                                 style_iced::Theme::Light => Svg::new(Handle::from_memory(
                                     include_bytes!("icons/moon-solid.svg").to_vec(),
                                 )),
-                            }
-                            .width(Length::Units(30)),
+                            },
                         )
+                        .height(Length::Fill)
                         .on_press(Message::ToggleTheme),
                     )
                     .push(
@@ -170,9 +189,9 @@ impl MainPage for MainApp {
                             &mut self.state_lang_button,
                             Svg::new(Handle::from_memory(
                                 include_bytes!("icons/globe-europe-solid.svg").to_vec(),
-                            ))
-                            .width(Length::Units(30)),
+                            )),
                         )
+                        .height(Length::Fill)
                         .on_press(Message::ChangePage(Page::Lang)),
                     ),
             );

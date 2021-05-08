@@ -4,7 +4,7 @@ mod lang_page;
 mod main_page;
 mod talisman_page;
 
-use std::collections::HashMap;
+use std::{array, collections::HashMap, fs, path::Path};
 
 use crate::{
     armor_and_skills::{
@@ -16,7 +16,10 @@ use crate::{
     style_iced,
 };
 
-use iced::{button, pick_list, scrollable, slider, text_input, Container, Element, Sandbox};
+use iced::{
+    button, executor, pick_list, scrollable, slider, text_input, Application, Clipboard, Command,
+    Container, Element,
+};
 
 use self::{
     error_page::get_error_page, lang_page::LangPage, main_page::MainPage,
@@ -122,6 +125,8 @@ pub struct MainApp {
 
     theme: style_iced::Theme,
     state_theme_button: button::State,
+
+    state_update_button: button::State,
 }
 
 #[derive(Debug, Clone)]
@@ -172,7 +177,10 @@ pub enum Message {
     ChangePage(Page),
     LocaleChanged(String),
     ToggleTheme,
+    UpdateArmors,
 }
+
+const ARMORS_PATH: &str = "armors";
 
 const WAISTS_PATH: &str = "armors/waists.ron";
 const HELMETS_PATH: &str = "armors/helmets.ron";
@@ -213,10 +221,27 @@ fn get_all_armors_from_file(
 
 use lexical_sort::natural_lexical_cmp;
 
-impl Sandbox for MainApp {
-    type Message = Message;
+const BASE_URL: &str =
+    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
+const HELMETS_FILE: &str = "helmets.ron";
+const CHESTS_FILE: &str = "chests.ron";
+const ARMS_FILE: &str = "arms.ron";
+const WAISTS_FILE: &str = "waists.ron";
+const LEGS_FILE: &str = "legs.ron";
 
-    fn new() -> Self {
+async fn download_armors(file: &str) -> String {
+    let resp = reqwest::get(format!("{}{}", BASE_URL, file)).await.unwrap();
+    resp.text().await.unwrap()
+}
+
+impl Application for MainApp {
+    type Message = Message;
+    type Executor = executor::Default;
+    type Flags = ();
+
+    fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
+        // let text = iced_futures::futures::executor::block_on(get_arms());
+        // println!("{}", text);
         let talismans = match get_talismans(TALISMANS_PATH) {
             Ok(talismans) => {
                 println!("Talisman file succesfully loaded.");
@@ -285,42 +310,45 @@ impl Sandbox for MainApp {
 
         let filtered_wish_choices = sorted_wish_choices.clone();
 
-        Self {
-            wish_fields: vec![WishField::default()],
+        (
+            Self {
+                wish_fields: vec![WishField::default()],
 
-            waists,
-            helmets,
-            arms,
-            legs,
-            chests,
-            talismans,
-            states_talisman_button,
+                waists,
+                helmets,
+                arms,
+                legs,
+                chests,
+                talismans,
+                states_talisman_button,
 
-            filtered_wish_choices,
-            sorted_wish_choices,
+                filtered_wish_choices,
+                sorted_wish_choices,
 
-            selected_gender: Gender::Female,
+                selected_gender: Gender::Female,
 
-            page,
+                page,
 
-            locales,
-            selected_locale,
+                locales,
+                selected_locale,
 
-            state_buttons_locale,
+                state_buttons_locale,
 
-            profile,
+                profile,
 
-            theme,
+                theme,
 
-            ..Self::default()
-        }
+                ..Self::default()
+            },
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
         String::from("RAB - Rusty Armor Builds")
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match message {
             Message::WishSelected(key, wish) => {
                 self.wish_fields[key].selected = wish;
@@ -515,7 +543,28 @@ impl Sandbox for MainApp {
                 };
                 self.save_profile()
             }
-        }
+            Message::UpdateArmors => {
+                let path = Path::new(ARMORS_PATH);
+                if !path.is_dir() {
+                    match fs::create_dir(path) {
+                        Err(err) => println!("Can't create armors directory:\n{}", err),
+                        _ => {}
+                    }
+                }
+                for file in array::IntoIter::new([
+                    HELMETS_FILE,
+                    CHESTS_FILE,
+                    ARMS_FILE,
+                    WAISTS_FILE,
+                    LEGS_FILE,
+                ]) {
+                    let text = iced_futures::futures::executor::block_on(download_armors(file));
+                    fs::write(path.join(file), text).unwrap();
+                    println!("{}", file);
+                }
+            }
+        };
+        Command::none()
     }
 
     fn view(&mut self) -> Element<Message> {
