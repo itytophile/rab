@@ -4,7 +4,7 @@ mod lang_page;
 mod main_page;
 mod talisman_page;
 
-use std::{array, collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
     armor_and_skills::{
@@ -14,6 +14,8 @@ use crate::{
     locale::{get_locales, Locale},
     profile::{get_profile, save_profile},
     style_iced,
+    update::download_armors_and_locales,
+    ARMORS_PATH, LOCALE_DIR_PATH,
 };
 
 use iced::{
@@ -127,6 +129,20 @@ pub struct MainApp {
     state_theme_button: button::State,
 
     state_update_button: button::State,
+    update_state: UpdateState,
+}
+
+enum UpdateState {
+    Updating,
+    Done,
+    Initial,
+    Problem,
+}
+
+impl Default for UpdateState {
+    fn default() -> Self {
+        UpdateState::Initial
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -178,9 +194,8 @@ pub enum Message {
     LocaleChanged(String),
     ToggleTheme,
     UpdateArmors,
+    UpdateDone(bool), // true = no problem
 }
-
-const ARMORS_PATH: &str = "armors";
 
 const WAISTS_PATH: &str = "armors/waists.ron";
 const HELMETS_PATH: &str = "armors/helmets.ron";
@@ -190,8 +205,6 @@ const CHESTS_PATH: &str = "armors/chests.ron";
 
 const TALISMANS_PATH: &str = "talismans.ron";
 const PROFILE_PATH: &str = "profile.ron";
-
-const LOCALE_DIR_PATH: &str = "locale";
 
 impl MainApp {
     fn clear_talisman_editor(&mut self) {
@@ -220,19 +233,6 @@ fn get_all_armors_from_file(
 }
 
 use lexical_sort::natural_lexical_cmp;
-
-const BASE_URL: &str =
-    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
-const HELMETS_FILE: &str = "helmets.ron";
-const CHESTS_FILE: &str = "chests.ron";
-const ARMS_FILE: &str = "arms.ron";
-const WAISTS_FILE: &str = "waists.ron";
-const LEGS_FILE: &str = "legs.ron";
-
-async fn download_armors(file: &str) -> String {
-    let resp = reqwest::get(format!("{}{}", BASE_URL, file)).await.unwrap();
-    resp.text().await.unwrap()
-}
 
 impl Application for MainApp {
     type Message = Message;
@@ -544,23 +544,30 @@ impl Application for MainApp {
                 self.save_profile()
             }
             Message::UpdateArmors => {
-                let path = Path::new(ARMORS_PATH);
-                if !path.is_dir() {
-                    match fs::create_dir(path) {
+                self.update_state = UpdateState::Updating;
+                let armors_path = Path::new(ARMORS_PATH);
+                if !armors_path.is_dir() {
+                    match fs::create_dir(armors_path) {
                         Err(err) => println!("Can't create armors directory:\n{}", err),
                         _ => {}
                     }
                 }
-                for file in array::IntoIter::new([
-                    HELMETS_FILE,
-                    CHESTS_FILE,
-                    ARMS_FILE,
-                    WAISTS_FILE,
-                    LEGS_FILE,
-                ]) {
-                    let text = iced_futures::futures::executor::block_on(download_armors(file));
-                    fs::write(path.join(file), text).unwrap();
-                    println!("{}", file);
+                let locale_path = Path::new(LOCALE_DIR_PATH);
+                if !locale_path.is_dir() {
+                    match fs::create_dir(locale_path) {
+                        Err(err) => println!("Can't create locale directory:\n{}", err),
+                        _ => {}
+                    }
+                }
+                return Command::perform(download_armors_and_locales(), |no_problem| {
+                    Message::UpdateDone(no_problem)
+                });
+            }
+            Message::UpdateDone(no_problem) => {
+                self.update_state = if no_problem {
+                    UpdateState::Done
+                } else {
+                    UpdateState::Problem
                 }
             }
         };

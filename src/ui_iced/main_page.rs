@@ -17,7 +17,7 @@ use super::{
         get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
         COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
     },
-    MainApp, Message, Page,
+    MainApp, Message, Page, UpdateState,
 };
 
 pub trait MainPage {
@@ -133,6 +133,31 @@ impl MainPage for MainApp {
             .push(weapon_jewels_row)
             .push(sliders_weapon_slot)
             .align_items(Align::Center);
+        let update_button = Button::new(
+            &mut self.state_update_button,
+            Row::new()
+                .spacing(BUTTON_SPACING)
+                .height(Length::Fill)
+                .push(Svg::new(Handle::from_memory(match self.update_state {
+                    UpdateState::Initial => {
+                        include_bytes!("icons/cloud-download-alt-solid.svg").to_vec()
+                    }
+                    UpdateState::Done => include_bytes!("icons/check-solid.svg").to_vec(),
+                    UpdateState::Updating => include_bytes!("icons/sync-alt-solid.svg").to_vec(),
+                    UpdateState::Problem => include_bytes!("icons/times-solid.svg").to_vec(),
+                })))
+                .push(
+                    Text::new(match self.update_state {
+                        UpdateState::Initial => "Update armors",
+                        UpdateState::Done => "Updated",
+                        UpdateState::Updating => "Updating...",
+                        UpdateState::Problem => "Problem, check console",
+                    })
+                    .height(Length::Fill)
+                    .vertical_alignment(VerticalAlignment::Center),
+                ),
+        )
+        .height(Length::Fill);
         let column_right = Column::new()
             .spacing(10)
             .push(
@@ -148,24 +173,10 @@ impl MainPage for MainApp {
                     .height(Length::Units(40))
                     .spacing(BUTTON_SPACING)
                     .push(Space::with_width(Length::Fill))
-                    .push(
-                        Button::new(
-                            &mut self.state_update_button,
-                            Row::new()
-                                .spacing(BUTTON_SPACING)
-                                .height(Length::Fill)
-                                .push(Svg::new(Handle::from_memory(
-                                    include_bytes!("icons/cloud-download-alt-solid.svg").to_vec(),
-                                )))
-                                .push(
-                                    Text::new("Update armors")
-                                        .height(Length::Fill)
-                                        .vertical_alignment(VerticalAlignment::Center),
-                                ),
-                        )
-                        .on_press(Message::UpdateArmors)
-                        .height(Length::Fill),
-                    )
+                    .push(match self.update_state {
+                        UpdateState::Updating => update_button,
+                        _ => update_button.on_press(Message::UpdateArmors),
+                    })
                     .push(
                         Button::new(
                             &mut self.state_theme_button,
