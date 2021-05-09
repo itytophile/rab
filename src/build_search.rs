@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     array,
     cmp::{min, Ordering},
+    collections::HashMap,
     iter,
 };
 
@@ -19,6 +20,46 @@ pub struct Build {
     pub leg: Option<(Armor, Jewels)>,
     pub talisman: Option<(Armor, Jewels)>,
     pub weapon_jewels: Jewels,
+}
+
+impl Build {
+    pub fn get_all_skills_and_amounts(&self) -> HashMap<Skill, u8> {
+        let mut hm = HashMap::with_capacity(5);
+        for opt in array::IntoIter::new([
+            &self.helmet,
+            &self.chest,
+            &self.arm,
+            &self.waist,
+            &self.leg,
+            &self.talisman,
+        ]) {
+            if let Some((armor, jewels)) = opt {
+                for (skill, amount) in armor.skills.iter() {
+                    if !hm.contains_key(skill) {
+                        hm.insert(*skill, 0);
+                    }
+                    *hm.get_mut(skill).unwrap() += amount
+                }
+                for jewel in jewels.iter() {
+                    if let Some(skill) = jewel {
+                        if !hm.contains_key(skill) {
+                            hm.insert(*skill, 0);
+                        }
+                        *hm.get_mut(skill).unwrap() += 1
+                    }
+                }
+            }
+        }
+        for jewel in self.weapon_jewels.iter() {
+            if let Some(skill) = jewel {
+                if !hm.contains_key(skill) {
+                    hm.insert(*skill, 0);
+                }
+                *hm.get_mut(skill).unwrap() += 1
+            }
+        }
+        hm
+    }
 }
 
 /// Returns a Vec containing every item of the provided slice but wrapped in an Option, then add None

@@ -5,12 +5,13 @@ use iced::{
     Align, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
 };
 
-use crate::{locale::InterfaceSymbol, style_iced};
+use crate::{armor_and_skills::Skill, locale::InterfaceSymbol, style_iced};
 
 use super::{
     common_elements::{
-        armor_desc_to_element, ARM_ICON, BUTTON_SPACING, CHEST_ICON, COLUMN_SPACING, HELMET_ICON,
-        ICON_SIZE, LEG_ICON, SCROLL_PADDING, TALISMAN_ICON, WAIST_ICON,
+        armor_desc_to_element, skill_and_amount, ARM_ICON, BUTTON_SPACING, CHEST_ICON,
+        COLUMN_SPACING, HELMET_ICON, ICON_SIZE, LEG_ICON, SCROLL_PADDING, SKILL_AMOUNT_SIZE,
+        TALISMAN_ICON, WAIST_ICON,
     },
     MainApp, Msg, Page,
 };
@@ -24,7 +25,9 @@ pub trait DetailsPage {
 impl DetailsPage for MainApp {
     fn get_details_page(&mut self, on_save_builds: bool) -> Element<Msg> {
         let mut row = Row::new();
-        let mut row_title = Row::new().push(Space::with_width(Length::Units(SCROLL_PADDING)));
+        let mut row_title = Row::new()
+            .push(Space::with_width(Length::Units(SCROLL_PADDING)))
+            .push(Space::with_width(Length::Units(SKILL_AMOUNT_SIZE)));
         for icon in array::IntoIter::new([
             HELMET_ICON.to_vec(),
             CHEST_ICON.to_vec(),
@@ -45,6 +48,21 @@ impl DetailsPage for MainApp {
         } else {
             &self.builds[build_index]
         };
+
+        let mut col_skills = Column::new().spacing(5);
+
+        let hm_skills_amount = build.get_all_skills_and_amounts();
+
+        let mut skill_and_amounts: Vec<(&Skill, &u8)> = hm_skills_amount.iter().collect();
+
+        skill_and_amounts.sort_unstable_by_key(|(_, amount)| *amount);
+
+        for (skill, &amount) in skill_and_amounts.iter().rev() {
+            col_skills = col_skills.push(skill_and_amount(skill, amount));
+        }
+
+        row = row.push(col_skills);
+
         for part in std::array::IntoIter::new([
             &build.helmet,
             &build.chest,

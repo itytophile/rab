@@ -296,12 +296,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
         }
 
         for (skill, amount) in armor.skills.iter() {
-            col_armor_stats = col_armor_stats.push(
-                Container::new(Text::new(format!("{} x{}", skill, amount)))
-                    .width(Length::Units(150))
-                    .center_x()
-                    .style(style_iced::Container::Fire),
-            )
+            col_armor_stats = col_armor_stats.push(skill_and_amount(skill, *amount))
         }
 
         if armor.skills.len() > 0 && armor.slots.len() > 0 {
@@ -378,4 +373,13 @@ pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> Container<'a, Msg> {
     .width(Length::Units(170))
     .center_x()
     .style(style_iced::Container::Ice)
+}
+
+pub(super) const SKILL_AMOUNT_SIZE: u16 = 150;
+
+pub(super) fn skill_and_amount<'a>(skill: &Skill, amount: u8) -> Container<'a, Msg> {
+    Container::new(Text::new(format!("{} x{}", skill, amount)))
+        .width(Length::Units(SKILL_AMOUNT_SIZE))
+        .center_x()
+        .style(style_iced::Container::Fire)
 }

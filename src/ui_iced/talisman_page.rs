@@ -11,8 +11,8 @@ use crate::{
 
 use super::{
     common_elements::{
-        get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
-        COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
+        get_column_builds_found, get_skill_filter, get_wishfield_row, skill_and_amount,
+        BUTTON_SPACING, COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
     },
     MainApp, Msg, Page, WishField,
 };
@@ -266,12 +266,7 @@ fn talisman_to_element<'a>(
         .push(Text::new(&talisman.name));
 
     for (skill, amount) in talisman.skills.iter() {
-        talisman_desc = talisman_desc.push(
-            Container::new(Text::new(format!("{} x{}", skill, amount)))
-                .width(Length::Units(150))
-                .center_x()
-                .style(style_iced::Container::Fire),
-        )
+        talisman_desc = talisman_desc.push(skill_and_amount(skill, *amount))
     }
 
     if talisman.skills.len() > 0 && talisman.slots.len() > 0 {
