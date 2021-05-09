@@ -15,7 +15,8 @@ use crate::{
 use super::{
     common_elements::{
         get_column_builds_found, get_skill_filter, get_wishfield_row, update_button,
-        BUTTON_SPACING, COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
+        BUTTON_SPACING, COLUMN_SPACING, FILTER_INPUT_WIDTH, GLOBE_ICON, ICON_SIZE,
+        LEFT_COLUMN_WIDTH, MOON_ICON, SCROLL_PADDING, SUN_ICON,
     },
     MainApp, Msg, Page,
 };
@@ -146,7 +147,7 @@ impl MainPage for MainApp {
             )
             .push(
                 Row::new()
-                    .height(Length::Units(40))
+                    .height(Length::Units(ICON_SIZE))
                     .spacing(BUTTON_SPACING)
                     .push(Space::with_width(Length::Fill))
                     .push(
@@ -165,11 +166,11 @@ impl MainPage for MainApp {
                                     // I'm scared of the to_vec(), maybe I need
                                     // to create the vectors beforehand but
                                     // I'm just praying the compiler to optimize it.
-                                    include_bytes!("icons/sun-solid.svg").to_vec(),
+                                    SUN_ICON.to_vec(),
                                 )),
-                                style_iced::Theme::Light => Svg::new(Handle::from_memory(
-                                    include_bytes!("icons/moon-solid.svg").to_vec(),
-                                )),
+                                style_iced::Theme::Light => {
+                                    Svg::new(Handle::from_memory(MOON_ICON.to_vec()))
+                                }
                             },
                         )
                         .height(Length::Fill)
@@ -178,9 +179,7 @@ impl MainPage for MainApp {
                     .push(
                         Button::new(
                             &mut self.state_lang_button,
-                            Svg::new(Handle::from_memory(
-                                include_bytes!("icons/globe-europe-solid.svg").to_vec(),
-                            )),
+                            Svg::new(Handle::from_memory(GLOBE_ICON.to_vec())),
                         )
                         .height(Length::Fill)
                         .on_press(Msg::ChangePage(Page::Lang)),

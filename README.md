@@ -6,7 +6,9 @@ Armor files used by RAB here: https://github.com/itytophile/monster-hunter-rise-
 
 Localization files here: https://github.com/itytophile/rab-locale
 
-Icons from Font Awesome https://fontawesome.com/license/free
+MH Icons from https://monsterhunter.fandom.com/wiki/User:YukiHerz/SVG_Icons
+
+Other icons from Font Awesome https://fontawesome.com/license/free
 
 ## Installation
 

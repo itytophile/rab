@@ -23,6 +23,23 @@ pub(super) const COLUMN_SPACING: u16 = 10;
 pub(super) const FILTER_INPUT_WIDTH: u16 = 150;
 pub(super) const SCROLL_PADDING: u16 = 20;
 pub(super) const LEFT_COLUMN_WIDTH: u16 = 470;
+pub(super) const ICON_SIZE: u16 = 40;
+
+pub(super) const CHECK_ICON: &[u8] = include_bytes!("icons/check-solid.svg");
+pub(super) const DOWNLOAD_ICON: &[u8] = include_bytes!("icons/cloud-download-alt-solid.svg");
+pub(super) const GLOBE_ICON: &[u8] = include_bytes!("icons/globe-europe-solid.svg");
+pub(super) const MOON_ICON: &[u8] = include_bytes!("icons/moon-solid.svg");
+pub(super) const SUN_ICON: &[u8] = include_bytes!("icons/sun-solid.svg");
+pub(super) const SYNC_ICON: &[u8] = include_bytes!("icons/sync-alt-solid.svg");
+pub(super) const CROSS_ICON: &[u8] = include_bytes!("icons/times-solid.svg");
+
+pub(super) const LONG_SWORD_ICON: &[u8] = include_bytes!("icons/long-sword.svg");
+pub(super) const HELMET_ICON: &[u8] = include_bytes!("icons/helmet.svg");
+pub(super) const CHEST_ICON: &[u8] = include_bytes!("icons/chest.svg");
+pub(super) const ARM_ICON: &[u8] = include_bytes!("icons/arm.svg");
+pub(super) const WAIST_ICON: &[u8] = include_bytes!("icons/waist.svg");
+pub(super) const LEG_ICON: &[u8] = include_bytes!("icons/leg.svg");
+pub(super) const TALISMAN_ICON: &[u8] = include_bytes!("icons/talisman.svg");
 
 pub(super) fn get_column_builds_found<'a>(
     state_builds_scroll: &'a mut scrollable::State,
@@ -63,7 +80,7 @@ pub(super) fn get_column_builds_found<'a>(
             let row_build = Row::new()
                 .align_items(Align::Center)
                 .spacing(BUTTON_SPACING)
-                .push(weapon_button.width(Length::Units(20)))
+                .push(weapon_button.width(Length::Units(30)))
                 .push(build_part_to_button(&mut state_button.0, &build.helmet))
                 .push(build_part_to_button(&mut state_button.1, &build.chest))
                 .push(build_part_to_button(&mut state_button.2, &build.arm))
@@ -77,27 +94,37 @@ pub(super) fn get_column_builds_found<'a>(
         }
     }
 
+    // to center the titles
+    let space_width = if SCROLL_PADDING < BUTTON_SPACING {
+        0
+    } else {
+        SCROLL_PADDING - BUTTON_SPACING
+    };
+
     let mut col_titles = Row::new()
         .spacing(BUTTON_SPACING)
-        .push(Space::with_width(Length::Units(20)));
+        .push(Space::with_width(Length::Units(space_width)))
+        .push(
+            Svg::new(Handle::from_memory(LONG_SWORD_ICON.to_vec())).width(Length::Units(ICON_SIZE)),
+        );
 
-    for col_name in array::IntoIter::new([
-        InterfaceSymbol::Helmet,
-        InterfaceSymbol::Chest,
-        InterfaceSymbol::Arm,
-        InterfaceSymbol::Waist,
-        InterfaceSymbol::Leg,
-        InterfaceSymbol::Talisman,
+    for icon in array::IntoIter::new([
+        HELMET_ICON.to_vec(),
+        CHEST_ICON.to_vec(),
+        ARM_ICON.to_vec(),
+        WAIST_ICON.to_vec(),
+        LEG_ICON.to_vec(),
+        TALISMAN_ICON.to_vec(),
     ]) {
         col_titles = col_titles.push(
-            Text::new(col_name)
+            Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
                 .width(Length::Fill)
-                .horizontal_alignment(HorizontalAlignment::Center),
+                .center_x(),
         );
     }
 
     Column::new()
-        .push(col_titles)
+        .push(col_titles.push(Space::with_width(Length::Units(space_width))))
         .push(builds_scrolls.width(Length::Fill))
 }
 
@@ -190,12 +217,10 @@ pub(super) fn update_button<'a>(
             .spacing(BUTTON_SPACING)
             .height(Length::Fill)
             .push(Svg::new(Handle::from_memory(match update_state {
-                UpdateState::Initial => {
-                    include_bytes!("icons/cloud-download-alt-solid.svg").to_vec()
-                }
-                UpdateState::Done => include_bytes!("icons/check-solid.svg").to_vec(),
-                UpdateState::Updating => include_bytes!("icons/sync-alt-solid.svg").to_vec(),
-                UpdateState::Problem => include_bytes!("icons/times-solid.svg").to_vec(),
+                UpdateState::Initial => DOWNLOAD_ICON.to_vec(),
+                UpdateState::Done => CHECK_ICON.to_vec(),
+                UpdateState::Updating => SYNC_ICON.to_vec(),
+                UpdateState::Problem => CROSS_ICON.to_vec(),
             })))
             .push(
                 Text::new(match update_state {
