@@ -199,10 +199,10 @@ pub(super) fn update_button<'a>(
             })))
             .push(
                 Text::new(match update_state {
-                    UpdateState::Initial => "Update armors",
-                    UpdateState::Done => "Updated",
-                    UpdateState::Updating => "Updating...",
-                    UpdateState::Problem => "Problem, check console",
+                    UpdateState::Initial => InterfaceSymbol::UpdateArmors,
+                    UpdateState::Done => InterfaceSymbol::Updated,
+                    UpdateState::Updating => InterfaceSymbol::Updating,
+                    UpdateState::Problem => InterfaceSymbol::ProblemCheckConsole,
                 })
                 .height(Length::Fill)
                 .vertical_alignment(VerticalAlignment::Center),

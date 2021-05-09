@@ -98,6 +98,10 @@ pub enum InterfaceSymbol {
     RemoveTalisman,
     TemplateFreeSlot,
     TemplateJewelOnSlot,
+    UpdateArmors,
+    Updated,
+    Updating,
+    ProblemCheckConsole,
 }
 
 impl InterfaceSymbol {
