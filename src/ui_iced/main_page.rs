@@ -2,7 +2,7 @@ use std::{array, cmp::Ordering};
 
 use iced::{
     widget::svg::Handle, Align, Button, Column, Container, Element, Length, Radio, Row, Scrollable,
-    Slider, Space, Svg, Text, VerticalAlignment,
+    Slider, Space, Svg, Text,
 };
 
 use crate::{
@@ -14,18 +14,18 @@ use crate::{
 
 use super::{
     common_elements::{
-        get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
-        COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
+        get_column_builds_found, get_skill_filter, get_wishfield_row, update_button,
+        BUTTON_SPACING, COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
     },
-    MainApp, Message, Page, UpdateState,
+    MainApp, Msg, Page,
 };
 
 pub trait MainPage {
-    fn get_main_page(&mut self) -> Element<Message>;
+    fn get_main_page(&mut self) -> Element<Msg>;
 }
 
 impl MainPage for MainApp {
-    fn get_main_page(&mut self) -> Element<Message> {
+    fn get_main_page(&mut self) -> Element<Msg> {
         let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
             .padding(SCROLL_PADDING)
             .spacing(10)
@@ -36,9 +36,9 @@ impl MainPage for MainApp {
                 wish_field,
                 &self.filtered_wish_choices,
                 size <= 1,
-                Message::RemoveWish(key),
-                move |w| Message::WishSelected(key, w),
-                move |value| Message::SliderChanged(key, value),
+                Msg::RemoveWish(key),
+                move |w| Msg::WishSelected(key, w),
+                move |value| Msg::SliderChanged(key, value),
             ));
         }
 
@@ -54,13 +54,13 @@ impl MainPage for MainApp {
                 Gender::Female,
                 InterfaceSymbol::Female,
                 Some(self.selected_gender),
-                Message::GenderChanged,
+                Msg::GenderChanged,
             ))
             .push(Radio::new(
                 Gender::Male,
                 InterfaceSymbol::Male,
                 Some(self.selected_gender),
-                Message::GenderChanged,
+                Msg::GenderChanged,
             ))
             .push(Space::with_width(Length::Units(20)))
             .push(filter_text_input);
@@ -70,19 +70,19 @@ impl MainPage for MainApp {
             Text::new(InterfaceSymbol::AddWish),
         )
         .style(style_iced::Button::Add)
-        .on_press(Message::AddWish);
+        .on_press(Msg::AddWish);
         let talisman_button = Button::new(
             &mut self.state_talisman_button,
             Text::new(InterfaceSymbol::ManageTalismans),
         )
         .style(style_iced::Button::Talisman)
-        .on_press(Message::ChangePage(Page::Talisman));
+        .on_press(Msg::ChangePage(Page::Talisman));
         let search_button = Button::new(
             &mut self.state_search_button,
             Text::new(InterfaceSymbol::SearchBuilds),
         )
         .style(style_iced::Button::Search)
-        .on_press(Message::Search);
+        .on_press(Msg::Search);
         let buttons = Row::new()
             .spacing(BUTTON_SPACING)
             .push(add_wish_button)
@@ -113,7 +113,7 @@ impl MainPage for MainApp {
         {
             sliders_weapon_slot = sliders_weapon_slot
                 .push(Slider::new(state, 0..=3, *value, move |v| {
-                    Message::WeaponSlotChanged(index, v)
+                    Msg::WeaponSlotChanged(index, v)
                 }))
                 .push(Text::new(value.to_string()))
         }
@@ -133,31 +133,7 @@ impl MainPage for MainApp {
             .push(weapon_jewels_row)
             .push(sliders_weapon_slot)
             .align_items(Align::Center);
-        let update_button = Button::new(
-            &mut self.state_update_button,
-            Row::new()
-                .spacing(BUTTON_SPACING)
-                .height(Length::Fill)
-                .push(Svg::new(Handle::from_memory(match self.update_state {
-                    UpdateState::Initial => {
-                        include_bytes!("icons/cloud-download-alt-solid.svg").to_vec()
-                    }
-                    UpdateState::Done => include_bytes!("icons/check-solid.svg").to_vec(),
-                    UpdateState::Updating => include_bytes!("icons/sync-alt-solid.svg").to_vec(),
-                    UpdateState::Problem => include_bytes!("icons/times-solid.svg").to_vec(),
-                })))
-                .push(
-                    Text::new(match self.update_state {
-                        UpdateState::Initial => "Update armors",
-                        UpdateState::Done => "Updated",
-                        UpdateState::Updating => "Updating...",
-                        UpdateState::Problem => "Problem, check console",
-                    })
-                    .height(Length::Fill)
-                    .vertical_alignment(VerticalAlignment::Center),
-                ),
-        )
-        .height(Length::Fill);
+
         let column_right = Column::new()
             .spacing(10)
             .push(
@@ -173,10 +149,14 @@ impl MainPage for MainApp {
                     .height(Length::Units(40))
                     .spacing(BUTTON_SPACING)
                     .push(Space::with_width(Length::Fill))
-                    .push(match self.update_state {
-                        UpdateState::Updating => update_button,
-                        _ => update_button.on_press(Message::UpdateArmors),
-                    })
+                    .push(
+                        update_button(
+                            &mut self.state_update_button,
+                            self.update_state,
+                            Msg::UpdateArmors,
+                        )
+                        .height(Length::Fill),
+                    )
                     .push(
                         Button::new(
                             &mut self.state_theme_button,
@@ -193,7 +173,7 @@ impl MainPage for MainApp {
                             },
                         )
                         .height(Length::Fill)
-                        .on_press(Message::ToggleTheme),
+                        .on_press(Msg::ToggleTheme),
                     )
                     .push(
                         Button::new(
@@ -203,7 +183,7 @@ impl MainPage for MainApp {
                             )),
                         )
                         .height(Length::Fill)
-                        .on_press(Message::ChangePage(Page::Lang)),
+                        .on_press(Msg::ChangePage(Page::Lang)),
                     ),
             );
         Row::new()
@@ -214,7 +194,7 @@ impl MainPage for MainApp {
     }
 }
 
-fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Message> {
+fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Msg> {
     if let Some((armor, jewel_skills)) = armor {
         let mut col_armor_stats = Column::new()
             .align_items(Align::Center)

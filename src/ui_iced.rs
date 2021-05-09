@@ -1,7 +1,7 @@
 mod common_elements;
-mod error_page;
 mod lang_page;
 mod main_page;
+mod no_files_page;
 mod talisman_page;
 
 use std::{collections::HashMap, fs, path::Path};
@@ -20,11 +20,11 @@ use crate::{
 
 use iced::{
     button, executor, pick_list, scrollable, slider, text_input, Application, Clipboard, Command,
-    Container, Element,
+    Container, Element, Length,
 };
 
 use self::{
-    error_page::get_error_page, lang_page::LangPage, main_page::MainPage,
+    lang_page::LangPage, main_page::MainPage, no_files_page::NoFilesPage,
     talisman_page::TalismanPage,
 };
 
@@ -132,6 +132,7 @@ pub struct MainApp {
     update_state: UpdateState,
 }
 
+#[derive(Clone, Copy)]
 enum UpdateState {
     Updating,
     Done,
@@ -146,16 +147,11 @@ impl Default for UpdateState {
 }
 
 #[derive(Debug, Clone)]
-pub enum RabError {
-    ArmorFiles,
-}
-
-#[derive(Debug, Clone)]
 pub enum Page {
     Main,
     Talisman,
     Lang,
-    Err(String, RabError),
+    NoFiles,
 }
 
 impl Default for Page {
@@ -165,7 +161,7 @@ impl Default for Page {
 }
 
 #[derive(Debug, Clone)]
-pub enum Message {
+pub enum Msg {
     WishSelected(usize, Skill),
     AddWish,
     RemoveWish(usize),
@@ -195,6 +191,8 @@ pub enum Message {
     ToggleTheme,
     UpdateArmors,
     UpdateDone(bool), // true = no problem
+    DownloadArmors,
+    DownloadDone(bool),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -220,7 +218,40 @@ impl MainApp {
             Err(err) => println!("Can't save profile:\n{}", err),
         };
     }
+
+    fn reload_locales(&mut self) {
+        self.locales = match get_locales(LOCALE_DIR_PATH) {
+            Ok(locales) => locales,
+            Err(err) => {
+                println!(
+                    "Error with localization files at {}\n{}\nWARNING: no locale loaded.",
+                    LOCALE_DIR_PATH, err
+                );
+                HashMap::with_capacity(0)
+            }
+        };
+
+        self.state_buttons_locale = vec![Default::default(); self.locales.len()];
+
+        *super::LOCALE.lock().unwrap() = self.locales.get(&self.selected_locale).cloned();
+    }
+
+    fn reload_armors(&mut self) {
+        let (helmets, chests, arms, waists, legs) = match get_all_armors_from_file() {
+            Ok(lists) => lists,
+            Err(err) => {
+                println!("ERROR: Can't reload armors:\n{}", err);
+                (vec![], vec![], vec![], vec![], vec![])
+            }
+        };
+        self.helmets = helmets;
+        self.chests = chests;
+        self.arms = arms;
+        self.waists = waists;
+        self.legs = legs;
+    }
 }
+
 fn get_all_armors_from_file(
 ) -> Result<(Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>), ron::Error> {
     Ok((
@@ -232,14 +263,31 @@ fn get_all_armors_from_file(
     ))
 }
 
+fn create_locale_and_armors_dir() {
+    let armors_path = Path::new(ARMORS_PATH);
+    if !armors_path.is_dir() {
+        match fs::create_dir(armors_path) {
+            Err(err) => println!("Can't create armors directory:\n{}", err),
+            _ => {}
+        }
+    }
+    let locale_path = Path::new(LOCALE_DIR_PATH);
+    if !locale_path.is_dir() {
+        match fs::create_dir(locale_path) {
+            Err(err) => println!("Can't create locale directory:\n{}", err),
+            _ => {}
+        }
+    }
+}
+
 use lexical_sort::natural_lexical_cmp;
 
 impl Application for MainApp {
-    type Message = Message;
+    type Message = Msg;
     type Executor = executor::Default;
     type Flags = ();
 
-    fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
+    fn new(_flags: Self::Flags) -> (Self, Command<Msg>) {
         // let text = iced_futures::futures::executor::block_on(get_arms());
         // println!("{}", text);
         let talismans = match get_talismans(TALISMANS_PATH) {
@@ -259,8 +307,8 @@ impl Application for MainApp {
         let mut page = Page::Main;
         let (helmets, chests, arms, waists, legs) = match get_all_armors_from_file() {
             Ok(lists) => lists,
-            Err(err) => {
-                page = Page::Err(err.to_string(), RabError::ArmorFiles);
+            Err(_) => {
+                page = Page::NoFiles;
                 (vec![], vec![], vec![], vec![], vec![])
             }
         };
@@ -348,18 +396,18 @@ impl Application for MainApp {
         String::from("RAB - Rusty Armor Builds")
     }
 
-    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Msg, _clipboard: &mut Clipboard) -> Command<Msg> {
         match message {
-            Message::WishSelected(key, wish) => {
+            Msg::WishSelected(key, wish) => {
                 self.wish_fields[key].selected = wish;
                 self.wish_fields[key].value_slider = 1
             }
-            Message::AddWish => self.wish_fields.push(WishField::default()),
-            Message::RemoveWish(index) => {
+            Msg::AddWish => self.wish_fields.push(WishField::default()),
+            Msg::RemoveWish(index) => {
                 self.wish_fields.remove(index);
             }
-            Message::SliderChanged(index, value) => self.wish_fields[index].value_slider = value,
-            Message::Search => {
+            Msg::SliderChanged(index, value) => self.wish_fields[index].value_slider = value,
+            Msg::Search => {
                 let wishes: Vec<(Skill, u8)> = self
                     .wish_fields
                     .iter()
@@ -383,8 +431,8 @@ impl Application for MainApp {
                 );
                 self.states_build_button = vec![Default::default(); self.builds.len()];
             }
-            Message::ArmorDesc(option) => self.armor_desc = option,
-            Message::FilterChanged(text) => {
+            Msg::ArmorDesc(option) => self.armor_desc = option,
+            Msg::FilterChanged(text) => {
                 self.value_filter_text_input = text;
                 self.filtered_wish_choices = self
                     .sorted_wish_choices
@@ -398,14 +446,14 @@ impl Application for MainApp {
                     })
                     .collect();
             }
-            Message::GenderChanged(gender) => self.selected_gender = gender,
-            Message::WeaponSlotChanged(index, value) => {
+            Msg::GenderChanged(gender) => self.selected_gender = gender,
+            Msg::WeaponSlotChanged(index, value) => {
                 self.states_values_slider_weapon_slot[index].1 = value
             }
 
-            Message::ViewWeaponJewel(jewels) => self.selected_weapon_jewels = jewels,
-            Message::SelectTalisman(index) => self.selected_talisman = index,
-            Message::EditTalisman => {
+            Msg::ViewWeaponJewel(jewels) => self.selected_weapon_jewels = jewels,
+            Msg::SelectTalisman(index) => self.selected_talisman = index,
+            Msg::EditTalisman => {
                 self.is_editing = true;
                 let talisman = &self.talismans[self.selected_talisman.unwrap()];
                 // We provide the actual talisman's data to the edit form
@@ -427,7 +475,7 @@ impl Application for MainApp {
                     *slider_value = *slot;
                 }
             }
-            Message::SaveEdition => {
+            Msg::SaveEdition => {
                 self.is_editing = false;
                 let talisman = &mut self.talismans[self.selected_talisman.unwrap()];
                 talisman.name = self.value_edit_text_input.clone();
@@ -444,26 +492,26 @@ impl Application for MainApp {
                     .collect();
                 self.clear_talisman_editor()
             }
-            Message::CancelEdition => {
+            Msg::CancelEdition => {
                 self.is_editing = false;
                 self.clear_talisman_editor()
             }
-            Message::TalismanSlotChanged(index, value) => {
+            Msg::TalismanSlotChanged(index, value) => {
                 self.states_values_slider_talisman_slot[index].1 = value
             }
-            Message::EditTalismanName(name) => self.value_edit_text_input = name,
-            Message::EditSkillSelected(key, wish) => {
+            Msg::EditTalismanName(name) => self.value_edit_text_input = name,
+            Msg::EditSkillSelected(key, wish) => {
                 self.edit_wish_fields[key].selected = wish;
                 self.edit_wish_fields[key].value_slider = 1
             }
-            Message::EditAddSkill => self.edit_wish_fields.push(WishField::default()),
-            Message::EditRemoveSkill(index) => {
+            Msg::EditAddSkill => self.edit_wish_fields.push(WishField::default()),
+            Msg::EditRemoveSkill(index) => {
                 self.edit_wish_fields.remove(index);
             }
-            Message::EditSkillSliderChanged(index, value) => {
+            Msg::EditSkillSliderChanged(index, value) => {
                 self.edit_wish_fields[index].value_slider = value
             }
-            Message::RemoveTalisman => {
+            Msg::RemoveTalisman => {
                 let index = self.selected_talisman.unwrap();
                 self.talismans.remove(index);
                 self.states_talisman_button.remove(index);
@@ -471,7 +519,7 @@ impl Application for MainApp {
                 self.is_editing = false;
                 self.selected_talisman = None;
             }
-            Message::AddTalisman => {
+            Msg::AddTalisman => {
                 self.talismans.push(Armor {
                     name: "New talisman".to_string(),
                     skills: vec![(Skill::Botanist, 1)],
@@ -479,13 +527,11 @@ impl Application for MainApp {
                 });
                 self.states_talisman_button.push(Default::default())
             }
-            Message::SaveTalismans => {
-                match save_talismans_to_file(&self.talismans, TALISMANS_PATH) {
-                    Ok(path) => println!("Talismans saved to {}", path),
-                    Err(err) => println!("Unable to save the talismans: {}", err),
-                }
-            }
-            Message::DiscardTalismans => {
+            Msg::SaveTalismans => match save_talismans_to_file(&self.talismans, TALISMANS_PATH) {
+                Ok(path) => println!("Talismans saved to {}", path),
+                Err(err) => println!("Unable to save the talismans: {}", err),
+            },
+            Msg::DiscardTalismans => {
                 self.selected_talisman = None;
                 let talismans = match get_talismans(TALISMANS_PATH) {
                     Ok(talismans) => {
@@ -505,8 +551,8 @@ impl Application for MainApp {
                 self.talismans = talismans;
                 self.states_talisman_button = states_talisman_button;
             }
-            Message::ChangePage(page) => self.page = page,
-            Message::LocaleChanged(new_locale) => {
+            Msg::ChangePage(page) => self.page = page,
+            Msg::LocaleChanged(new_locale) => {
                 self.profile.insert("lang".to_string(), new_locale.clone());
                 *super::LOCALE.lock().unwrap() = self.locales.get(&new_locale).cloned();
                 // after the unwrap(), if there is a mystical problem with the mutex
@@ -529,7 +575,7 @@ impl Application for MainApp {
 
                 self.selected_locale = new_locale;
             }
-            Message::ToggleTheme => {
+            Msg::ToggleTheme => {
                 self.theme = match self.theme {
                     style_iced::Theme::Dark => {
                         self.profile
@@ -543,28 +589,36 @@ impl Application for MainApp {
                 };
                 self.save_profile()
             }
-            Message::UpdateArmors => {
+            Msg::UpdateArmors => {
                 self.update_state = UpdateState::Updating;
-                let armors_path = Path::new(ARMORS_PATH);
-                if !armors_path.is_dir() {
-                    match fs::create_dir(armors_path) {
-                        Err(err) => println!("Can't create armors directory:\n{}", err),
-                        _ => {}
-                    }
-                }
-                let locale_path = Path::new(LOCALE_DIR_PATH);
-                if !locale_path.is_dir() {
-                    match fs::create_dir(locale_path) {
-                        Err(err) => println!("Can't create locale directory:\n{}", err),
-                        _ => {}
-                    }
-                }
+                create_locale_and_armors_dir();
                 return Command::perform(download_armors_and_locales(), |no_problem| {
-                    Message::UpdateDone(no_problem)
+                    Msg::UpdateDone(no_problem)
                 });
             }
-            Message::UpdateDone(no_problem) => {
+            Msg::UpdateDone(no_problem) => {
                 self.update_state = if no_problem {
+                    self.reload_locales();
+                    self.reload_armors();
+
+                    UpdateState::Done
+                } else {
+                    UpdateState::Problem
+                }
+            }
+            Msg::DownloadArmors => {
+                self.update_state = UpdateState::Updating;
+                create_locale_and_armors_dir();
+                return Command::perform(download_armors_and_locales(), |no_problem| {
+                    Msg::DownloadDone(no_problem)
+                });
+            }
+            Msg::DownloadDone(no_problem) => {
+                self.update_state = if no_problem {
+                    self.reload_locales();
+                    self.reload_armors();
+
+                    self.page = Page::Lang;
                     UpdateState::Done
                 } else {
                     UpdateState::Problem
@@ -574,17 +628,19 @@ impl Application for MainApp {
         Command::none()
     }
 
-    fn view(&mut self) -> Element<Message> {
+    fn view(&mut self) -> Element<Msg> {
         let theme = self.theme;
 
         let container = Container::new(match &self.page {
             Page::Main => self.get_main_page(),
             Page::Talisman => self.get_talisman_page(),
-            // I don't know if this is possible to give this function
-            // just a &str. The compiler complains about lifetimes.
-            Page::Err(msg, _) => get_error_page(msg.clone()),
+            Page::NoFiles => self.get_no_files_page(),
             Page::Lang => self.get_lang_page(),
-        });
+        })
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x()
+        .center_y();
 
         match theme {
             style_iced::Theme::Dark => container.style(style_iced::Container::DarkTheme),

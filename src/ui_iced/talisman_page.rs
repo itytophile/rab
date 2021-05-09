@@ -14,15 +14,15 @@ use super::{
         get_column_builds_found, get_skill_filter, get_wishfield_row, BUTTON_SPACING,
         COLUMN_SPACING, FILTER_INPUT_WIDTH, LEFT_COLUMN_WIDTH, SCROLL_PADDING,
     },
-    MainApp, Message, Page, WishField,
+    MainApp, Msg, Page, WishField,
 };
 
 pub trait TalismanPage {
-    fn get_talisman_page(&mut self) -> Element<Message>;
+    fn get_talisman_page(&mut self) -> Element<Msg>;
 }
 
 impl TalismanPage for MainApp {
-    fn get_talisman_page(&mut self) -> Element<Message> {
+    fn get_talisman_page(&mut self) -> Element<Msg> {
         let back_button = Button::new(
             &mut self.state_talisman_button,
             Container::new(Text::new(InterfaceSymbol::Back))
@@ -30,14 +30,14 @@ impl TalismanPage for MainApp {
                 .width(Length::Units(100)),
         )
         .style(style_iced::Button::Talisman)
-        .on_press(Message::ChangePage(Page::Main));
+        .on_press(Msg::ChangePage(Page::Main));
 
         let add_talisman_button = Button::new(
             &mut self.state_add_wish_button,
             Text::new(InterfaceSymbol::AddTalisman),
         )
         .style(style_iced::Button::Add)
-        .on_press(Message::AddTalisman);
+        .on_press(Msg::AddTalisman);
 
         let row_buttons = Row::new()
             .spacing(BUTTON_SPACING)
@@ -58,7 +58,7 @@ impl TalismanPage for MainApp {
             let mut button = Button::new(state_button, Text::new(&talisman.name))
                 .style(style_iced::Button::Result);
             if !self.is_editing {
-                button = button.on_press(Message::SelectTalisman(Some(index)));
+                button = button.on_press(Msg::SelectTalisman(Some(index)));
             }
             talisman_scroll = talisman_scroll.push(button);
         }
@@ -96,7 +96,7 @@ impl TalismanPage for MainApp {
                                     &mut self.state_remove_talisman_button,
                                     Text::new(InterfaceSymbol::RemoveTalisman),
                                 )
-                                .on_press(Message::RemoveTalisman)
+                                .on_press(Msg::RemoveTalisman)
                                 .style(style_iced::Button::RemoveTalisman),
                             )
                             .push(
@@ -107,7 +107,7 @@ impl TalismanPage for MainApp {
                                         .width(Length::Units(100)),
                                 )
                                 .style(style_iced::Button::Cancel)
-                                .on_press(Message::CancelEdition),
+                                .on_press(Msg::CancelEdition),
                             )
                             .push(
                                 Button::new(
@@ -115,7 +115,7 @@ impl TalismanPage for MainApp {
                                     Text::new(InterfaceSymbol::Save),
                                 )
                                 .style(style_iced::Button::Save)
-                                .on_press(Message::SaveEdition),
+                                .on_press(Msg::SaveEdition),
                             ),
                     )
             } else {
@@ -138,7 +138,7 @@ impl TalismanPage for MainApp {
                                 .width(Length::Units(100)),
                         )
                         .style(style_iced::Button::Edit)
-                        .on_press(Message::EditTalisman),
+                        .on_press(Msg::EditTalisman),
                     )
             };
 
@@ -164,8 +164,8 @@ impl TalismanPage for MainApp {
         .style(style_iced::Button::Add);
 
         if !self.is_editing {
-            discard_button = discard_button.on_press(Message::DiscardTalismans);
-            save_button = save_button.on_press(Message::SaveTalismans)
+            discard_button = discard_button.on_press(Msg::DiscardTalismans);
+            save_button = save_button.on_press(Msg::SaveTalismans)
         }
 
         let column_left = column
@@ -199,12 +199,12 @@ fn get_talisman_editor<'a>(
     state_filter_text_input: &'a mut text_input::State,
     value_filter_text_input: &'a str,
     state_add_button: &'a mut button::State,
-) -> Scrollable<'a, Message> {
+) -> Scrollable<'a, Msg> {
     let text_input = TextInput::new(
         state_text_input,
         &InterfaceSymbol::TalismanName.to_string(),
         value_text_input,
-        Message::EditTalismanName,
+        Msg::EditTalismanName,
     )
     .padding(5)
     .width(Length::Units(150));
@@ -216,7 +216,7 @@ fn get_talisman_editor<'a>(
         .spacing(10)
         .push(
             Button::new(state_add_button, Text::new(InterfaceSymbol::AddSkill))
-                .on_press(Message::EditAddSkill)
+                .on_press(Msg::EditAddSkill)
                 .style(style_iced::Button::Add),
         )
         .push(filter_text_input);
@@ -233,9 +233,9 @@ fn get_talisman_editor<'a>(
             wish_fields,
             skill_list,
             false,
-            Message::EditRemoveSkill(index),
-            move |skill| Message::EditSkillSelected(index, skill),
-            move |v| Message::EditSkillSliderChanged(index, v),
+            Msg::EditRemoveSkill(index),
+            move |skill| Msg::EditSkillSelected(index, skill),
+            move |v| Msg::EditSkillSliderChanged(index, v),
         ));
     }
 
@@ -246,7 +246,7 @@ fn get_talisman_editor<'a>(
         sliders_slot = sliders_slot
             .push(
                 Slider::new(state, 0..=3, *value, move |v| {
-                    Message::TalismanSlotChanged(index, v)
+                    Msg::TalismanSlotChanged(index, v)
                 })
                 .width(Length::Units(40)),
             )
@@ -258,7 +258,7 @@ fn get_talisman_editor<'a>(
 fn talisman_to_element<'a>(
     talisman: &Armor,
     state_scroll: &'a mut scrollable::State,
-) -> Scrollable<'a, Message> {
+) -> Scrollable<'a, Msg> {
     let mut talisman_desc = Scrollable::new(state_scroll)
         .max_height(200)
         .align_items(Align::Center)

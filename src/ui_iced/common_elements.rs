@@ -1,8 +1,10 @@
 use std::array;
 
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Container, HorizontalAlignment, Length,
-    PickList, Row, Rule, Scrollable, Slider, Space, Text, TextInput, VerticalAlignment,
+    button, scrollable, text_input,
+    widget::svg::{Handle, Svg},
+    Align, Button, Column, Container, HorizontalAlignment, Length, PickList, Row, Rule, Scrollable,
+    Slider, Space, Text, TextInput, VerticalAlignment,
 };
 
 use crate::{
@@ -11,7 +13,7 @@ use crate::{
     style_iced,
 };
 
-use super::{Message, WishField};
+use super::{Msg, UpdateState, WishField};
 
 use crate::locale::InterfaceSymbol;
 
@@ -34,7 +36,7 @@ pub(super) fn get_column_builds_found<'a>(
         button::State, // talisman
         button::State, // weapon
     )],
-) -> Column<'a, Message> {
+) -> Column<'a, Msg> {
     let mut builds_scrolls = Scrollable::new(state_builds_scroll)
         .align_items(Align::Center)
         .spacing(10)
@@ -56,8 +58,7 @@ pub(super) fn get_column_builds_found<'a>(
             )
             .style(style_iced::Button::Talisman);
             if build.weapon_jewels.iter().any(Option::is_some) {
-                weapon_button =
-                    weapon_button.on_press(Message::ViewWeaponJewel(build.weapon_jewels));
+                weapon_button = weapon_button.on_press(Msg::ViewWeaponJewel(build.weapon_jewels));
             }
             let row_build = Row::new()
                 .align_items(Align::Center)
@@ -104,10 +105,10 @@ pub(super) fn get_wishfield_row<'a>(
     wish_field: &'a mut WishField,
     skill_list: &'a [Skill],
     disable_remove_button: bool,
-    on_remove: Message,
-    on_skill_selected: impl Fn(Skill) -> Message + 'static,
-    on_slider_changed: impl Fn(u8) -> Message + 'static,
-) -> Row<'a, Message> {
+    on_remove: Msg,
+    on_skill_selected: impl Fn(Skill) -> Msg + 'static,
+    on_slider_changed: impl Fn(u8) -> Msg + 'static,
+) -> Row<'a, Msg> {
     let pick_list = PickList::new(
         &mut wish_field.state_pick_list,
         skill_list,
@@ -142,12 +143,12 @@ pub(super) fn get_wishfield_row<'a>(
 pub(super) fn get_skill_filter<'a>(
     state: &'a mut text_input::State,
     value: &str,
-) -> TextInput<'a, Message> {
+) -> TextInput<'a, Msg> {
     TextInput::new(
         state,
         &InterfaceSymbol::SkillFilter.to_string(),
         value,
-        Message::FilterChanged,
+        Msg::FilterChanged,
     )
     .padding(5)
 }
@@ -155,7 +156,7 @@ pub(super) fn get_skill_filter<'a>(
 fn build_part_to_button<'a>(
     state: &'a mut button::State,
     build_part: &Option<(Armor, Jewels)>,
-) -> Button<'a, Message> {
+) -> Button<'a, Msg> {
     let button = Button::new(
         state,
         Container::new(Text::new(if let Some((armor, _)) = build_part {
@@ -174,6 +175,41 @@ fn build_part_to_button<'a>(
     if build_part.is_none() {
         button
     } else {
-        button.on_press(Message::ArmorDesc(build_part.clone()))
+        button.on_press(Msg::ArmorDesc(build_part.clone()))
+    }
+}
+
+pub(super) fn update_button<'a>(
+    state: &'a mut button::State,
+    update_state: UpdateState,
+    msg: Msg,
+) -> Button<'a, Msg> {
+    let b = Button::new(
+        state,
+        Row::new()
+            .spacing(BUTTON_SPACING)
+            .height(Length::Fill)
+            .push(Svg::new(Handle::from_memory(match update_state {
+                UpdateState::Initial => {
+                    include_bytes!("icons/cloud-download-alt-solid.svg").to_vec()
+                }
+                UpdateState::Done => include_bytes!("icons/check-solid.svg").to_vec(),
+                UpdateState::Updating => include_bytes!("icons/sync-alt-solid.svg").to_vec(),
+                UpdateState::Problem => include_bytes!("icons/times-solid.svg").to_vec(),
+            })))
+            .push(
+                Text::new(match update_state {
+                    UpdateState::Initial => "Update armors",
+                    UpdateState::Done => "Updated",
+                    UpdateState::Updating => "Updating...",
+                    UpdateState::Problem => "Problem, check console",
+                })
+                .height(Length::Fill)
+                .vertical_alignment(VerticalAlignment::Center),
+            ),
+    );
+    match update_state {
+        UpdateState::Updating | UpdateState::Done => b,
+        _ => b.on_press(msg),
     }
 }

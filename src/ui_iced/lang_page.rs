@@ -2,14 +2,14 @@ use iced::{Align, Button, Column, Container, Element, Length, Row, Space, Text};
 
 use crate::locale::InterfaceSymbol;
 
-use super::{common_elements::COLUMN_SPACING, MainApp, Message, Page};
+use super::{common_elements::COLUMN_SPACING, MainApp, Msg, Page};
 
 pub trait LangPage {
-    fn get_lang_page(&mut self) -> Element<Message>;
+    fn get_lang_page(&mut self) -> Element<Msg>;
 }
 
 impl LangPage for MainApp {
-    fn get_lang_page(&mut self) -> Element<Message> {
+    fn get_lang_page(&mut self) -> Element<Msg> {
         let mut locales_choice = Column::new().spacing(COLUMN_SPACING);
 
         for (locale_name, state) in self
@@ -24,7 +24,7 @@ impl LangPage for MainApp {
                     .center_x(),
             );
             locales_choice = locales_choice.push(if locale_name != &self.selected_locale {
-                button.on_press(Message::LocaleChanged(locale_name.clone()))
+                button.on_press(Msg::LocaleChanged(locale_name.clone()))
             } else {
                 button
             });
@@ -44,7 +44,7 @@ impl LangPage for MainApp {
                         &mut self.state_lang_button,
                         Text::new(InterfaceSymbol::Back),
                     )
-                    .on_press(Message::ChangePage(Page::Main)),
+                    .on_press(Msg::ChangePage(Page::Main)),
                 ),
             )
             .into()
