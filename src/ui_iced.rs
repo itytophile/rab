@@ -1,16 +1,22 @@
+mod builds_page;
 mod common_elements;
+mod details_page;
 mod lang_page;
 mod main_page;
 mod no_files_page;
 mod talisman_page;
 
-use std::{collections::HashMap, fs, path::Path};
+use std::{
+    collections::HashMap,
+    fs::{self, canonicalize},
+    path::Path,
+};
 
 use crate::{
     armor_and_skills::{
         get_armor_list, get_talismans, save_talismans_to_file, Armor, Gender, Skill,
     },
-    build_search::{pre_selection_then_brute_force_search, Build, Jewels},
+    build_search::{pre_selection_then_brute_force_search, Build},
     locale::{get_locales, Locale},
     profile::{get_profile, save_profile},
     style_iced,
@@ -22,10 +28,15 @@ use iced::{
     button, executor, pick_list, scrollable, slider, text_input, Application, Clipboard, Command,
     Container, Element, Length,
 };
+use ron::{
+    de::from_reader,
+    ser::{to_string_pretty, PrettyConfig},
+    Error,
+};
 
 use self::{
-    lang_page::LangPage, main_page::MainPage, no_files_page::NoFilesPage,
-    talisman_page::TalismanPage,
+    builds_page::BuildsPage, details_page::DetailsPage, lang_page::LangPage, main_page::MainPage,
+    no_files_page::NoFilesPage, talisman_page::TalismanPage,
 };
 
 struct WishField {
@@ -93,8 +104,6 @@ pub struct MainApp {
 
     states_values_slider_weapon_slot: [(slider::State, u8); 3],
 
-    selected_weapon_jewels: Jewels,
-
     state_talisman_scroll: scrollable::State,
     selected_talisman: Option<usize>,
     state_talisman_desc_scroll: scrollable::State,
@@ -130,6 +139,22 @@ pub struct MainApp {
 
     state_update_button: button::State,
     update_state: UpdateState,
+
+    details_build_index: usize,
+
+    saved_builds: HashMap<String, Build>,
+
+    state_builds_menu_button: button::State,
+    states_saved_builds_button: Vec<(
+        button::State,
+        button::State,
+        button::State,
+        button::State,
+        button::State,
+        button::State, //talisman
+        button::State, //weapon
+    )>,
+    details_build_name: String,
 }
 
 #[derive(Clone, Copy)]
@@ -146,12 +171,14 @@ impl Default for UpdateState {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Page {
     Main,
     Talisman,
     Lang,
     NoFiles,
+    Details(bool), // true check saved builds
+    Builds,
 }
 
 impl Default for Page {
@@ -171,7 +198,6 @@ pub enum Msg {
     FilterChanged(String),
     GenderChanged(Gender),
     WeaponSlotChanged(usize, u8),
-    ViewWeaponJewel(Jewels),
     SelectTalisman(Option<usize>),
     EditTalisman,
     SaveEdition,
@@ -193,6 +219,10 @@ pub enum Msg {
     UpdateDone(bool), // true = no problem
     DownloadArmors,
     DownloadDone(bool),
+    BuildDetails(usize), // index of build in vec builds
+    SaveBuild(usize),
+    SavedBuildDetails(String), // index of build in vec builds
+    EditSavedBuild(String),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -203,6 +233,7 @@ const CHESTS_PATH: &str = "armors/chests.ron";
 
 const TALISMANS_PATH: &str = "talismans.ron";
 const PROFILE_PATH: &str = "profile.ron";
+const BUILDS_PATH: &str = "builds.ron";
 
 impl MainApp {
     fn clear_talisman_editor(&mut self) {
@@ -282,6 +313,20 @@ fn create_locale_and_armors_dir() {
 
 use lexical_sort::natural_lexical_cmp;
 
+fn save_builds(builds: &HashMap<String, Build>, path: &str) -> Result<String, Error> {
+    let text = to_string_pretty(builds, PrettyConfig::new().with_indentor("  ".to_string()))?;
+
+    fs::write(path, text)?;
+
+    let path = canonicalize(path)?;
+
+    Ok(path.to_string_lossy().into_owned())
+}
+
+fn get_saved_builds(path: &str) -> Result<HashMap<String, Build>, Error> {
+    Ok(from_reader(fs::File::open(path)?)?)
+}
+
 impl Application for MainApp {
     type Message = Msg;
     type Executor = executor::Default;
@@ -358,6 +403,19 @@ impl Application for MainApp {
 
         let filtered_wish_choices = sorted_wish_choices.clone();
 
+        let saved_builds = match get_saved_builds(BUILDS_PATH) {
+            Ok(map) => {
+                println!("Builds file succesfully loaded.");
+                map
+            }
+            Err(err) => {
+                println!("Can't read the builds file:\n{}\nNo builds loaded.", err);
+                Default::default()
+            }
+        };
+
+        let states_saved_builds_button = vec![Default::default(); saved_builds.len()];
+
         (
             Self {
                 wish_fields: vec![WishField::default()],
@@ -386,6 +444,9 @@ impl Application for MainApp {
 
                 theme,
 
+                saved_builds,
+                states_saved_builds_button,
+
                 ..Self::default()
             },
             Command::none(),
@@ -413,7 +474,6 @@ impl Application for MainApp {
                     .iter()
                     .map(|wish| (wish.selected, wish.value_slider))
                     .collect();
-                self.selected_weapon_jewels = Default::default();
                 self.builds = pre_selection_then_brute_force_search(
                     &wishes,
                     &self.helmets,
@@ -450,8 +510,6 @@ impl Application for MainApp {
             Msg::WeaponSlotChanged(index, value) => {
                 self.states_values_slider_weapon_slot[index].1 = value
             }
-
-            Msg::ViewWeaponJewel(jewels) => self.selected_weapon_jewels = jewels,
             Msg::SelectTalisman(index) => self.selected_talisman = index,
             Msg::EditTalisman => {
                 self.is_editing = true;
@@ -624,6 +682,52 @@ impl Application for MainApp {
                     UpdateState::Problem
                 }
             }
+            Msg::BuildDetails(index) => {
+                self.value_edit_text_input = "".to_string();
+                self.details_build_index = index;
+                self.page = Page::Details(false)
+            }
+            Msg::SaveBuild(index) => {
+                if self
+                    .saved_builds
+                    .insert(
+                        self.value_edit_text_input.clone(),
+                        self.builds[index].clone(),
+                    )
+                    .is_none()
+                {
+                    self.states_saved_builds_button.push(Default::default())
+                };
+                match save_builds(&self.saved_builds, BUILDS_PATH) {
+                    Ok(path) => println!("Builds saved to {}", path),
+                    Err(err) => println!("Unable to save builds:\n{}", err),
+                }
+            }
+            Msg::SavedBuildDetails(name) => {
+                self.value_edit_text_input = name.clone();
+                self.details_build_name = name;
+                self.page = Page::Details(true)
+            }
+            Msg::EditSavedBuild(name) => {
+                if self
+                    .saved_builds
+                    .insert(
+                        self.value_edit_text_input.clone(),
+                        self.saved_builds.get(&name).unwrap().clone(),
+                    )
+                    .is_none()
+                // if the key didn't exist then it means that we just renamed the build
+                {
+                    self.saved_builds.remove(&name);
+                }
+
+                self.details_build_name = self.value_edit_text_input.clone();
+
+                match save_builds(&self.saved_builds, BUILDS_PATH) {
+                    Ok(path) => println!("Builds saved to {}", path),
+                    Err(err) => println!("Unable to save builds:\n{}", err),
+                }
+            }
         };
         Command::none()
     }
@@ -631,11 +735,13 @@ impl Application for MainApp {
     fn view(&mut self) -> Element<Msg> {
         let theme = self.theme;
 
-        let container = Container::new(match &self.page {
+        let container = Container::new(match self.page {
             Page::Main => self.get_main_page(),
             Page::Talisman => self.get_talisman_page(),
             Page::NoFiles => self.get_no_files_page(),
             Page::Lang => self.get_lang_page(),
+            Page::Details(on_save_builds) => self.get_details_page(on_save_builds),
+            Page::Builds => self.get_builds_page(),
         })
         .width(Length::Fill)
         .height(Length::Fill)

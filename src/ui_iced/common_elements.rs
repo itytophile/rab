@@ -1,4 +1,4 @@
-use std::array;
+use std::{array, cmp::Ordering};
 
 use iced::{
     button, scrollable, text_input,
@@ -24,6 +24,7 @@ pub(super) const FILTER_INPUT_WIDTH: u16 = 150;
 pub(super) const SCROLL_PADDING: u16 = 20;
 pub(super) const LEFT_COLUMN_WIDTH: u16 = 470;
 pub(super) const ICON_SIZE: u16 = 40;
+pub(super) const DETAIL_BUTTON_SIZE: u16 = 20;
 
 pub(super) const CHECK_ICON: &[u8] = include_bytes!("icons/check-solid.svg");
 pub(super) const DOWNLOAD_ICON: &[u8] = include_bytes!("icons/cloud-download-alt-solid.svg");
@@ -33,7 +34,6 @@ pub(super) const SUN_ICON: &[u8] = include_bytes!("icons/sun-solid.svg");
 pub(super) const SYNC_ICON: &[u8] = include_bytes!("icons/sync-alt-solid.svg");
 pub(super) const CROSS_ICON: &[u8] = include_bytes!("icons/times-solid.svg");
 
-pub(super) const LONG_SWORD_ICON: &[u8] = include_bytes!("icons/long-sword.svg");
 pub(super) const HELMET_ICON: &[u8] = include_bytes!("icons/helmet.svg");
 pub(super) const CHEST_ICON: &[u8] = include_bytes!("icons/chest.svg");
 pub(super) const ARM_ICON: &[u8] = include_bytes!("icons/arm.svg");
@@ -67,20 +67,23 @@ pub(super) fn get_column_builds_found<'a>(
             .enumerate()
             .zip(states_build_button.iter_mut())
         {
-            let mut weapon_button = Button::new(
+            let mut details_button = Button::new(
                 &mut state_button.6,
                 Text::new("?")
                     .vertical_alignment(VerticalAlignment::Center)
                     .horizontal_alignment(HorizontalAlignment::Center),
             )
             .style(style_iced::Button::Talisman);
+            /*
             if build.weapon_jewels.iter().any(Option::is_some) {
                 weapon_button = weapon_button.on_press(Msg::ViewWeaponJewel(build.weapon_jewels));
             }
+            */
+            details_button = details_button.on_press(Msg::BuildDetails(key));
             let row_build = Row::new()
                 .align_items(Align::Center)
                 .spacing(BUTTON_SPACING)
-                .push(weapon_button.width(Length::Units(30)))
+                .push(details_button.width(Length::Units(DETAIL_BUTTON_SIZE)))
                 .push(build_part_to_button(&mut state_button.0, &build.helmet))
                 .push(build_part_to_button(&mut state_button.1, &build.chest))
                 .push(build_part_to_button(&mut state_button.2, &build.arm))
@@ -104,9 +107,7 @@ pub(super) fn get_column_builds_found<'a>(
     let mut col_titles = Row::new()
         .spacing(BUTTON_SPACING)
         .push(Space::with_width(Length::Units(space_width)))
-        .push(
-            Svg::new(Handle::from_memory(LONG_SWORD_ICON.to_vec())).width(Length::Units(ICON_SIZE)),
-        );
+        .push(Space::with_width(Length::Units(DETAIL_BUTTON_SIZE)));
 
     for icon in array::IntoIter::new([
         HELMET_ICON.to_vec(),
@@ -180,7 +181,7 @@ pub(super) fn get_skill_filter<'a>(
     .padding(5)
 }
 
-fn build_part_to_button<'a>(
+pub(super) fn build_part_to_button<'a>(
     state: &'a mut button::State,
     build_part: &Option<(Armor, Jewels)>,
 ) -> Button<'a, Msg> {
@@ -237,4 +238,144 @@ pub(super) fn update_button<'a>(
         UpdateState::Updating | UpdateState::Done => b,
         _ => b.on_press(msg),
     }
+}
+
+pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Msg> {
+    if let Some((armor, jewel_skills)) = armor {
+        let mut col_armor_stats = Column::new()
+            .align_items(Align::Center)
+            .spacing(5)
+            .push(Text::new(armor.to_string()));
+        for (style, name, value) in array::IntoIter::new([
+            (
+                style_iced::Container::Defense,
+                InterfaceSymbol::Defense,
+                armor.defense as i8,
+            ),
+            (
+                style_iced::Container::Fire,
+                InterfaceSymbol::Fire,
+                armor.fire,
+            ),
+            (
+                style_iced::Container::Water,
+                InterfaceSymbol::Water,
+                armor.water,
+            ),
+            (
+                style_iced::Container::Thunder,
+                InterfaceSymbol::Thunder,
+                armor.thunder,
+            ),
+            (style_iced::Container::Ice, InterfaceSymbol::Ice, armor.ice),
+            (
+                style_iced::Container::Dragon,
+                InterfaceSymbol::Dragon,
+                armor.dragon,
+            ),
+        ]) {
+            col_armor_stats = col_armor_stats.push(
+                Row::new()
+                    .spacing(10)
+                    .push(
+                        Container::new(Text::new(name))
+                            .width(Length::Units(70))
+                            .center_x()
+                            .style(style),
+                    )
+                    .push(
+                        Text::new(value.to_string())
+                            .width(Length::Units(30))
+                            .horizontal_alignment(iced::HorizontalAlignment::Right),
+                    ),
+            )
+        }
+
+        if armor.skills.len() > 0 || armor.slots.len() > 0 {
+            col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
+        }
+
+        for (skill, amount) in armor.skills.iter() {
+            col_armor_stats = col_armor_stats.push(
+                Container::new(Text::new(format!("{} x{}", skill, amount)))
+                    .width(Length::Units(150))
+                    .center_x()
+                    .style(style_iced::Container::Fire),
+            )
+        }
+
+        if armor.skills.len() > 0 && armor.slots.len() > 0 {
+            col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
+        }
+
+        let mut slots = armor.slots.clone();
+        slots.sort_unstable();
+
+        let mut couple_slot_jewel = Vec::with_capacity(3);
+
+        let mut jewel_skills: Vec<Skill> = jewel_skills
+            .iter()
+            .copied()
+            .filter(Option::is_some)
+            .map(Option::unwrap)
+            .collect();
+        // reverse order
+        jewel_skills.sort_unstable_by(|a, b| {
+            if a.get_jewel_size() > b.get_jewel_size() {
+                Ordering::Less
+            } else if a.get_jewel_size() < b.get_jewel_size() {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+
+        // to be sure that the jewel will be on the most little slot possible
+        let mut to_remove = None;
+        'slot_loop: for slot in slots {
+            if let Some(index) = to_remove {
+                jewel_skills.swap_remove(index);
+                to_remove = None;
+            }
+            for (index, skill) in jewel_skills.iter().enumerate() {
+                if skill.get_jewel_size().unwrap() <= slot {
+                    couple_slot_jewel.push((slot, Some(*skill)));
+                    to_remove = Some(index);
+                    continue 'slot_loop;
+                }
+            }
+            couple_slot_jewel.push((slot, None));
+        }
+
+        for (slot, skill) in couple_slot_jewel {
+            col_armor_stats = col_armor_stats.push(if let Some(skill) = skill {
+                jewel_on_slot(&skill, slot)
+            } else {
+                Container::new(Text::new(
+                    InterfaceSymbol::TemplateFreeSlot
+                        .to_string()
+                        .replace("{size}", &slot.to_string()),
+                ))
+                .width(Length::Units(170))
+                .center_x()
+                .style(style_iced::Container::Ice)
+            });
+        }
+
+        col_armor_stats
+    } else {
+        Column::new()
+    }
+}
+
+pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> Container<'a, Msg> {
+    Container::new(Text::new(
+        InterfaceSymbol::TemplateJewelOnSlot
+            .to_string()
+            .replace("{skill}", &skill.to_string())
+            .replace("{size}", &slot.to_string()),
+    ))
+    .width(Length::Units(170))
+    .center_x()
+    .style(style_iced::Container::Ice)
 }

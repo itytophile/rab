@@ -14,7 +14,7 @@ pub struct Locale {
 }
 
 pub fn get_locales(directory_path: &str) -> Result<HashMap<String, Locale>, Error> {
-    let mut locales: HashMap<String, Locale> = HashMap::with_capacity(2);
+    let mut locales: HashMap<String, Locale> = HashMap::with_capacity(7);
     let paths = fs::read_dir(directory_path)?;
 
     for path in paths {

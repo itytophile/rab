@@ -1,3 +1,5 @@
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::{
     array,
     cmp::{min, Ordering},
@@ -6,11 +8,9 @@ use std::{
 
 use crate::armor_and_skills::{Armor, Gender, Skill};
 
-use itertools::Itertools;
-
 pub type Jewels = [Option<Skill>; 3];
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Build {
     pub helmet: Option<(Armor, Jewels)>,
     pub chest: Option<(Armor, Jewels)>,
