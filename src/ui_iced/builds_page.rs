@@ -3,15 +3,15 @@ use std::array;
 use iced::{
     widget::svg::{Handle, Svg},
     Align, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Rule, Scrollable,
-    Space, Text, VerticalAlignment,
+    Space, Text,
 };
 
 use crate::{locale::InterfaceSymbol, style_iced};
 
 use super::{
     common_elements::{
-        build_part_to_button, ARM_ICON, BUTTON_SPACING, CHEST_ICON, DETAIL_BUTTON_SIZE,
-        HELMET_ICON, ICON_SIZE, LEG_ICON, SCROLL_PADDING, TALISMAN_ICON, WAIST_ICON,
+        build_part_to_button, ARM_ICON, BUTTON_SPACING, CHEST_ICON, HELMET_ICON, ICON_SIZE,
+        LEG_ICON, SCROLL_PADDING, TALISMAN_ICON, WAIST_ICON,
     },
     MainApp, Msg, Page,
 };
@@ -49,6 +49,17 @@ impl BuildsPage for MainApp {
                 let row_build = Row::new()
                     .align_items(Align::Center)
                     .spacing(BUTTON_SPACING)
+                    .push(
+                        Button::new(
+                            &mut state_button.7,
+                            Text::new(InterfaceSymbol::Remove)
+                                .width(Length::Units(100))
+                                .horizontal_alignment(HorizontalAlignment::Center),
+                        )
+                        .style(style_iced::Button::Remove)
+                        .on_press(Msg::RemoveSavedBuild(name.clone()))
+                        .width(Length::Units(100)),
+                    )
                     .push(details_button)
                     .push(build_part_to_button(&mut state_button.0, &build.helmet))
                     .push(build_part_to_button(&mut state_button.1, &build.chest))
@@ -73,7 +84,8 @@ impl BuildsPage for MainApp {
         let mut col_titles = Row::new()
             .spacing(BUTTON_SPACING)
             .push(Space::with_width(Length::Units(space_width)))
-            .push(Space::with_width(Length::Units(200)));
+            .push(Space::with_width(Length::Units(200)))
+            .push(Space::with_width(Length::Units(100)));
 
         for icon in array::IntoIter::new([
             HELMET_ICON.to_vec(),

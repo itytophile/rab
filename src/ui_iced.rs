@@ -153,6 +153,7 @@ pub struct MainApp {
         button::State,
         button::State, //talisman
         button::State, //weapon
+        button::State, //remove
     )>,
     details_build_name: String,
 }
@@ -223,6 +224,7 @@ pub enum Msg {
     SaveBuild(usize),
     SavedBuildDetails(String), // index of build in vec builds
     EditSavedBuild(String),
+    RemoveSavedBuild(String),
 }
 
 const WAISTS_PATH: &str = "armors/waists.ron";
@@ -280,6 +282,13 @@ impl MainApp {
         self.arms = arms;
         self.waists = waists;
         self.legs = legs;
+    }
+
+    fn save_builds(&self) {
+        match save_builds(&self.saved_builds, BUILDS_PATH) {
+            Ok(path) => println!("Builds saved to {}", path),
+            Err(err) => println!("Unable to save builds:\n{}", err),
+        }
     }
 }
 
@@ -698,10 +707,8 @@ impl Application for MainApp {
                 {
                     self.states_saved_builds_button.push(Default::default())
                 };
-                match save_builds(&self.saved_builds, BUILDS_PATH) {
-                    Ok(path) => println!("Builds saved to {}", path),
-                    Err(err) => println!("Unable to save builds:\n{}", err),
-                }
+                self.page = Page::Builds;
+                self.save_builds();
             }
             Msg::SavedBuildDetails(name) => {
                 self.value_edit_text_input = name.clone();
@@ -709,24 +716,17 @@ impl Application for MainApp {
                 self.page = Page::Details(true)
             }
             Msg::EditSavedBuild(name) => {
-                if self
-                    .saved_builds
-                    .insert(
-                        self.value_edit_text_input.clone(),
-                        self.saved_builds.get(&name).unwrap().clone(),
-                    )
-                    .is_none()
-                // if the key didn't exist then it means that we just renamed the build
-                {
-                    self.saved_builds.remove(&name);
-                }
+                let build = self.saved_builds.remove(&name).unwrap();
+                self.saved_builds
+                    .insert(self.value_edit_text_input.clone(), build);
 
                 self.details_build_name = self.value_edit_text_input.clone();
 
-                match save_builds(&self.saved_builds, BUILDS_PATH) {
-                    Ok(path) => println!("Builds saved to {}", path),
-                    Err(err) => println!("Unable to save builds:\n{}", err),
-                }
+                self.save_builds();
+            }
+            Msg::RemoveSavedBuild(name) => {
+                self.saved_builds.remove(&name);
+                self.save_builds();
             }
         };
         Command::none()
