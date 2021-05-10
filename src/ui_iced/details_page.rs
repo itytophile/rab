@@ -5,7 +5,7 @@ use iced::{
     Align, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
 };
 
-use crate::{armor_and_skills::Skill, locale::InterfaceSymbol, style_iced};
+use crate::{locale::InterfaceSymbol, style_iced};
 
 use super::{
     common_elements::{
@@ -43,22 +43,12 @@ impl DetailsPage for MainApp {
             );
         }
         let build_index = self.details_build_index;
-        let build = if on_save_builds {
-            self.saved_builds.get(&self.details_build_name).unwrap()
-        } else {
-            &self.builds[build_index]
-        };
+        let build = self.focused_build.as_ref().unwrap();
 
         let mut col_skills = Column::new().spacing(5);
 
-        let hm_skills_amount = build.get_all_skills_and_amounts();
-
-        let mut skill_and_amounts: Vec<(&Skill, &u8)> = hm_skills_amount.iter().collect();
-
-        skill_and_amounts.sort_unstable_by_key(|(_, amount)| *amount);
-
-        for (skill, &amount) in skill_and_amounts.iter().rev() {
-            col_skills = col_skills.push(skill_and_amount(skill, amount));
+        for (skill, amount) in self.total_skills_and_amounts_focused_build.iter().rev() {
+            col_skills = col_skills.push(skill_and_amount(skill, *amount));
         }
 
         row = row.push(col_skills);

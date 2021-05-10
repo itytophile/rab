@@ -156,6 +156,9 @@ pub struct MainApp {
         button::State, //remove
     )>,
     details_build_name: String,
+
+    focused_build: Option<Build>,
+    total_skills_and_amounts_focused_build: Vec<(Skill, u8)>, // to not sort everytime
 }
 
 #[derive(Clone, Copy)]
@@ -289,6 +292,14 @@ impl MainApp {
             Ok(path) => println!("Builds saved to {}", path),
             Err(err) => println!("Unable to save builds:\n{}", err),
         }
+    }
+
+    fn focus_new_build(&mut self, build: Build) {
+        self.total_skills_and_amounts_focused_build =
+            build.get_all_skills_and_amounts().drain().collect();
+        self.total_skills_and_amounts_focused_build
+            .sort_unstable_by_key(|(_, amount)| *amount);
+        self.focused_build = Some(build);
     }
 }
 
@@ -693,6 +704,9 @@ impl Application for MainApp {
             }
             Msg::BuildDetails(index) => {
                 self.value_edit_text_input = "".to_string();
+
+                self.focus_new_build(self.builds[index].clone());
+
                 self.details_build_index = index;
                 self.page = Page::Details(false)
             }
@@ -712,6 +726,9 @@ impl Application for MainApp {
             }
             Msg::SavedBuildDetails(name) => {
                 self.value_edit_text_input = name.clone();
+
+                self.focus_new_build(self.saved_builds.get(&name).unwrap().clone());
+
                 self.details_build_name = name;
                 self.page = Page::Details(true)
             }
