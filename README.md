@@ -12,9 +12,11 @@ Other icons from Font Awesome https://fontawesome.com/license/free
 
 ## Installation
 
-WARNING: The binary (the .exe file) must be next to the "armors" folder for it to work!!!!
-
 If you use Windows or Linux, you can download the binary here https://github.com/itytophile/rab/releases
+
+RAB will download on its own the armor and localization files if they are not present.
+
+However you can still download the files manually [here](https://github.com/itytophile/monster-hunter-rise-armors) and [here](https://github.com/itytophile/rab-locale). The armor files must be in a folder named "armors" and the localization files in a folder named "locale". Both folders must be next to the executable.
 
 ## Need help for localization!
 
@@ -83,5 +85,3 @@ cargo run --release
 ```
 
 If you want to move the binary somewhere else, it is located here: `rab/target/release/rab(.exe)`
-
-WARNING: The binary must be next to the "armors" folder for it to work!!!!

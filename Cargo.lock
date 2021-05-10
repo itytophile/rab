@@ -1214,9 +1214,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfb77c123b4e2f72a2069aeae0b4b4949cc7e966df277813fc16347e7549737"
+checksum = "60daa14be0e0786db0f03a9e57cb404c9d756eed2b6c62b9ea98ec5743ec75a9"
 dependencies = [
  "bytes",
  "http",
@@ -2193,7 +2193,7 @@ dependencies = [
 
 [[package]]
 name = "rab"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "iced",
  "iced_futures",
