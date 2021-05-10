@@ -506,7 +506,7 @@ impl Skill {
 
             ParalysisAttack => SkillDesc {
                 limit: 3,
-                jewel_size: Some(1),
+                jewel_size: Some(2),
             },
 
             PierceUp => SkillDesc {
