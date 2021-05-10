@@ -97,7 +97,7 @@ impl DetailsPage for MainApp {
                         .push(
                             TextInput::new(
                                 &mut self.state_edit_text_input,
-                                "New build name",
+                                &InterfaceSymbol::NewBuildName.to_string(),
                                 &self.value_edit_text_input,
                                 Msg::EditTalismanName,
                             )
@@ -107,7 +107,7 @@ impl DetailsPage for MainApp {
                         .push(
                             Button::new(
                                 &mut self.state_save_talismans_button,
-                                Text::new("Save build"),
+                                Text::new(InterfaceSymbol::SaveBuild),
                             )
                             .style(style_iced::Button::Add)
                             .on_press(if on_save_builds {

@@ -102,6 +102,9 @@ pub enum InterfaceSymbol {
     Updated,
     Updating,
     ProblemCheckConsole,
+    ManageBuilds,
+    SaveBuild,
+    NewBuildName,
 }
 
 impl InterfaceSymbol {

@@ -68,7 +68,7 @@ impl MainPage for MainApp {
 
         let builds_menu_button = Button::new(
             &mut self.state_builds_menu_button,
-            Text::new("Manage builds"),
+            Text::new(InterfaceSymbol::ManageBuilds),
         )
         .style(style_iced::Button::Talisman)
         .on_press(Msg::ChangePage(Page::Builds));
