@@ -721,6 +721,7 @@ impl Application for MainApp {
                 {
                     self.states_saved_builds_button.push(Default::default())
                 };
+
                 self.page = Page::Builds;
                 self.save_builds();
             }
@@ -739,6 +740,7 @@ impl Application for MainApp {
 
                 self.details_build_name = self.value_edit_text_input.clone();
 
+                self.page = Page::Builds;
                 self.save_builds();
             }
             Msg::RemoveSavedBuild(name) => {
