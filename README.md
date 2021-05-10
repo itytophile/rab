@@ -47,7 +47,11 @@ Choose the wished skills and RAB searches compatible builds for you:
 You can add your own talismans to RAB:
 
 ![Talisman menu](https://raw.githubusercontent.com/itytophile/rab/main/docs/screenshots/talisman_menu.png)
-![Talisman edition](https://raw.githubusercontent.com/itytophile/rab/main/docs/screenshots/talisman_edition.png)
+
+Manage your builds!
+
+![Build details](https://raw.githubusercontent.com/itytophile/rab/main/docs/screenshots/rab_details.png)
+![Build list](https://raw.githubusercontent.com/itytophile/rab/main/docs/screenshots/rab_builds.png)
 
 ## Building
 
