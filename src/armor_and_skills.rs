@@ -565,7 +565,7 @@ impl Skill {
             },
 
             Resentment => SkillDesc {
-                limit: 3,
+                limit: 5,
                 jewel_size: Some(2),
             },
 
@@ -600,7 +600,7 @@ impl Skill {
             },
 
             EvadeWindow => SkillDesc {
-                limit: 3,
+                limit: 5,
                 jewel_size: Some(2),
             },
 
