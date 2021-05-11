@@ -1,6 +1,6 @@
 [package]
 name = "rab"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["ityt <imran.tierce@protonmail.com>"]
 edition = "2018"
 repository = "https://github.com/itytophile/rab"
