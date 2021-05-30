@@ -218,6 +218,8 @@ pub enum Skill {
     IceResistance,
     ThunderResistance,
     CarvingMaster,
+    Dragonheart,
+    Stormsoul,
 }
 
 use Skill::*;
@@ -241,7 +243,7 @@ impl Skill {
     pub fn get_limit(&self) -> u8 {
         self.get_skill_desc().limit
     }
-    pub const ALL: [Skill; 109] = [
+    pub const ALL: [Skill; 111] = [
         Botanist,
         DefenseBoost,
         ItemProlonger,
@@ -351,6 +353,8 @@ impl Skill {
         IceResistance,
         ThunderResistance,
         CarvingMaster,
+        Dragonheart,
+        Stormsoul,
     ];
     fn get_skill_desc(&self) -> SkillDesc {
         match self {
@@ -885,6 +889,14 @@ impl Skill {
             },
             CarvingMaster => SkillDesc {
                 limit: 1,
+                jewel_size: None,
+            },
+            Dragonheart => SkillDesc {
+                limit: 5,
+                jewel_size: None,
+            },
+            Stormsoul => SkillDesc {
+                limit: 5,
                 jewel_size: None,
             },
         }
