@@ -1,7 +1,12 @@
 [package]
 name = "rab-core"
-version = "0.1.0"
+version = "0.3.3"
+authors = ["ityt <imran.tierce@protonmail.com>"]
 edition = "2018"
+repository = "https://github.com/itytophile/rab"
+description = "Rusty Armor Builds - Algorithms, Armors and skill management"
+license = "GPL-3.0"
+keywords = ["monster", "hunter", "rise", "armor", "search"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
