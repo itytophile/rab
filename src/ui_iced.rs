@@ -23,7 +23,7 @@ use crate::{
 
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
-    build_search::{pre_selection_then_brute_force_search, Build},
+    build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
 
 use iced::{
@@ -500,12 +500,14 @@ impl Application for MainApp {
                     .collect();
                 self.builds = pre_selection_then_brute_force_search(
                     &wishes,
-                    &self.helmets,
-                    &self.chests,
-                    &self.arms,
-                    &self.waists,
-                    &self.legs,
-                    &self.talismans,
+                    AllArmorSlices {
+                        helmets: &self.helmets,
+                        chests: &self.chests,
+                        arms: &self.arms,
+                        waists: &self.waists,
+                        legs: &self.legs,
+                        talismans: &self.talismans,
+                    },
                     self.selected_gender,
                     [
                         self.states_values_slider_weapon_slot[0].1,

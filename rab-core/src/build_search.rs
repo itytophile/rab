@@ -32,31 +32,28 @@ impl Build {
             &self.waist,
             &self.leg,
             &self.talisman,
-        ]) {
-            if let Some((armor, jewels)) = opt {
-                for (skill, amount) in armor.skills.iter() {
-                    if !hm.contains_key(skill) {
-                        hm.insert(*skill, 0);
-                    }
-                    *hm.get_mut(skill).unwrap() += amount
-                }
-                for jewel in jewels.iter() {
-                    if let Some(skill) = jewel {
-                        if !hm.contains_key(skill) {
-                            hm.insert(*skill, 0);
-                        }
-                        *hm.get_mut(skill).unwrap() += 1
-                    }
-                }
-            }
-        }
-        for jewel in self.weapon_jewels.iter() {
-            if let Some(skill) = jewel {
+        ])
+        .flatten()
+        {
+            let (armor, jewels) = opt;
+            for (skill, amount) in armor.skills.iter() {
                 if !hm.contains_key(skill) {
                     hm.insert(*skill, 0);
                 }
-                *hm.get_mut(skill).unwrap() += 1
+                *hm.get_mut(skill).unwrap() += amount
             }
+            for jewel in jewels.iter().flatten() {
+                if !hm.contains_key(jewel) {
+                    hm.insert(*jewel, 0);
+                }
+                *hm.get_mut(jewel).unwrap() += 1
+            }
+        }
+        for jewel in self.weapon_jewels.iter().flatten() {
+            if !hm.contains_key(jewel) {
+                hm.insert(*jewel, 0);
+            }
+            *hm.get_mut(jewel).unwrap() += 1
         }
         hm
     }
@@ -86,14 +83,17 @@ fn optionify_slice_and_add_none<T>(slice: &[T]) -> Vec<Option<&T>> {
 /// but the first build has more empty armor pieces then we can ignore the second build. (Example in code)
 fn brute_force_search_builds(
     wishes: &[(Skill, u8)],
-    helmets: &[Armor],
-    chests: &[Armor],
-    arms: &[Armor],
-    waists: &[Armor],
-    legs: &[Armor],
-    talismans: &[Armor],
+    all_armor_slices: AllArmorSlices,
     weapon_slots: [u8; 3],
 ) -> Vec<Build> {
+    let AllArmorSlices {
+        helmets,
+        chests,
+        arms,
+        waists,
+        legs,
+        talismans,
+    } = all_armor_slices;
     let mut builds: Vec<Build> = Vec::with_capacity(500);
 
     for v in array::IntoIter::new([helmets, chests, arms, waists, legs, talismans])
@@ -130,15 +130,7 @@ fn brute_force_search_builds(
                 (None, None) => Ordering::Equal,
                 (None, Some(_)) => Ordering::Greater,
                 (Some(_), None) => Ordering::Less,
-                (Some(a), Some(b)) => {
-                    if a > b {
-                        Ordering::Less
-                    } else if a < b {
-                        Ordering::Greater
-                    } else {
-                        Ordering::Equal
-                    }
-                }
+                (Some(a), Some(b)) => b.cmp(&a),
             }
         });
 
@@ -188,30 +180,12 @@ fn brute_force_search_builds(
 
         if delta_wishes.iter().all(|(_, amount)| *amount == 0) {
             let build = Build {
-                helmet: match helmet {
-                    None => None,
-                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[0])),
-                },
-                chest: match chest {
-                    None => None,
-                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[1])),
-                },
-                arm: match arm {
-                    None => None,
-                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[2])),
-                },
-                waist: match waist {
-                    None => None,
-                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[3])),
-                },
-                leg: match leg {
-                    None => None,
-                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[4])),
-                },
-                talisman: match talisman {
-                    None => None,
-                    Some(armor) => Some((armor.clone(), possible_jewels_for_each_part[5])),
-                },
+                helmet: helmet.map(|armor| (armor.clone(), possible_jewels_for_each_part[0])),
+                chest: chest.map(|armor| (armor.clone(), possible_jewels_for_each_part[1])),
+                arm: arm.map(|armor| (armor.clone(), possible_jewels_for_each_part[2])),
+                waist: waist.map(|armor| (armor.clone(), possible_jewels_for_each_part[3])),
+                leg: leg.map(|armor| (armor.clone(), possible_jewels_for_each_part[4])),
+                talisman: talisman.map(|armor| (armor.clone(), possible_jewels_for_each_part[5])),
                 weapon_jewels: possible_jewels_for_each_part[6],
             };
 
@@ -306,6 +280,15 @@ fn brute_force_search_builds(
     builds
 }
 
+pub struct AllArmorSlices<'a> {
+    pub helmets: &'a [Armor],
+    pub chests: &'a [Armor],
+    pub arms: &'a [Armor],
+    pub waists: &'a [Armor],
+    pub legs: &'a [Armor],
+    pub talismans: &'a [Armor],
+}
+
 /// Makes a copy of the armor slots. Useful when we want to write in the array.
 fn extract_slots_copy(helmet: &Option<&Armor>) -> [u8; 3] {
     match helmet {
@@ -324,23 +307,28 @@ fn extract_slots_copy(helmet: &Option<&Armor>) -> [u8; 3] {
 /// the results of the brute force search. This is the recommended function to call when we want to search builds.
 pub fn pre_selection_then_brute_force_search(
     wishes: &[(Skill, u8)],
-    helmets: &[Armor],
-    chests: &[Armor],
-    arms: &[Armor],
-    waists: &[Armor],
-    legs: &[Armor],
-    talismans: &[Armor],
+    all_armor_slices: AllArmorSlices,
     gender: Gender,
     weapon_slots: [u8; 3],
 ) -> Vec<Build> {
+    let AllArmorSlices {
+        helmets,
+        chests,
+        arms,
+        waists,
+        legs,
+        talismans,
+    } = all_armor_slices;
     brute_force_search_builds(
         wishes,
-        &search_best_candidates(wishes, helmets, gender),
-        &search_best_candidates(wishes, chests, gender),
-        &search_best_candidates(wishes, arms, gender),
-        &search_best_candidates(wishes, waists, gender),
-        &search_best_candidates(wishes, legs, gender),
-        &search_best_candidates(wishes, talismans, gender),
+        AllArmorSlices {
+            helmets: &search_best_candidates(wishes, helmets, gender),
+            chests: &search_best_candidates(wishes, chests, gender),
+            arms: &search_best_candidates(wishes, arms, gender),
+            waists: &search_best_candidates(wishes, waists, gender),
+            legs: &search_best_candidates(wishes, legs, gender),
+            talismans: &search_best_candidates(wishes, talismans, gender),
+        },
         weapon_slots,
     )
 }
@@ -560,10 +548,7 @@ fn compare_slots(slots0: &[u8], slots1: &[u8]) -> OddComparison {
 /// the delta skills will be:
 /// - for A: [(Botanist,1),(CriticalBoost,0)]
 /// - for B: [(Botanist,0),(CriticalBoost,0),(AttackBoost,1)]
-fn generate_deltas_skills(
-    skills0: &[(Skill, u8)],
-    skills1: &[(Skill, u8)],
-) -> (Vec<(Skill, u8)>, Vec<(Skill, u8)>) {
+fn generate_deltas_skills(skills0: &[(Skill, u8)], skills1: &[(Skill, u8)]) -> DeltasSkills {
     let mut delta0 = Vec::with_capacity(skills0.len());
     let mut delta1 = Vec::with_capacity(skills1.len());
 
@@ -597,3 +582,5 @@ fn generate_deltas_skills(
 
     (delta0, delta1)
 }
+
+type DeltasSkills = (Vec<(Skill, u8)>, Vec<(Skill, u8)>);
