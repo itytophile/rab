@@ -22,4 +22,4 @@ once_cell = "1.8"
 lexical-sort = "0.3"
 reqwest = "0.11"
 iced_futures = "0.3"
-rab-core = { version = "", path = "rab-core" }
+rab-core = { version = "0.3", path = "rab-core" }
