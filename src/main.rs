@@ -3,6 +3,7 @@ mod profile;
 mod style_iced;
 mod ui_iced;
 mod update;
+mod file;
 
 use std::sync::Mutex;
 

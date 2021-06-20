@@ -8,4 +8,3 @@ edition = "2018"
 [dependencies]
 serde = "1.0"
 itertools = "0.10"
-ron = "0.6"

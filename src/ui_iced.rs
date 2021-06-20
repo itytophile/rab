@@ -12,17 +12,11 @@ use std::{
     path::Path,
 };
 
-use crate::{
-    locale::{get_locales, Locale, LocalizedSkill},
-    profile::{get_profile, save_profile},
-    style_iced,
-    update::download_armors_and_locales,
-    ARMORS_PATH, LOCALE_DIR_PATH,
-};
+use crate::{ARMORS_PATH, LOCALE_DIR_PATH, file::{get_armor_list, get_talismans, save_talismans_to_file}, locale::{get_locales, Locale, LocalizedSkill}, profile::{get_profile, save_profile}, style_iced, update::download_armors_and_locales};
 
 use rab_core::{
     armor_and_skills::{
-        get_armor_list, get_talismans, save_talismans_to_file, Armor, Gender, Skill,
+        Armor, Gender, Skill,
     },
     build_search::{pre_selection_then_brute_force_search, Build},
 };
