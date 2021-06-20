@@ -141,12 +141,12 @@ impl Into<String> for InterfaceSymbol {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct LocalizedArmor(pub Armor);
+#[derive(Debug, Clone)]
+pub struct LocalizedArmor<'a>(pub &'a Armor);
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub struct LocalizedSkill(pub Skill);
 
-impl Display for LocalizedArmor {
+impl Display for LocalizedArmor<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -166,11 +166,11 @@ impl Display for LocalizedSkill {
     }
 }
 
-impl Deref for LocalizedArmor {
+impl Deref for LocalizedArmor<'_> {
     type Target = Armor;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.0
     }
 }
 

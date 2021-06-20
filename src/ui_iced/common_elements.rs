@@ -189,7 +189,7 @@ pub(super) fn build_part_to_button<'a>(
     let button = Button::new(
         state,
         Container::new(Text::new(if let Some((armor, _)) = build_part {
-            LocalizedArmor(armor.clone()).to_string()
+            LocalizedArmor(armor).to_string()
         } else {
             InterfaceSymbol::Free.to_string()
         }))
@@ -246,7 +246,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
         let mut col_armor_stats = Column::new()
             .align_items(Align::Center)
             .spacing(5)
-            .push(Text::new(LocalizedArmor(armor.clone()).to_string()));
+            .push(Text::new(LocalizedArmor(armor).to_string()));
         for (style, name, value) in array::IntoIter::new([
             (
                 style_iced::Container::Defense,
