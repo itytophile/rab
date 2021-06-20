@@ -1,7 +1,4 @@
-use std::{
-    array,
-    cmp::Reverse,
-};
+use std::cmp::Reverse;
 
 use iced::{
     button, scrollable, text_input,
@@ -116,14 +113,14 @@ pub(super) fn get_column_builds_found<'a>(
         .push(Space::with_width(Length::Units(space_width)))
         .push(Space::with_width(Length::Units(DETAIL_BUTTON_SIZE)));
 
-    for icon in array::IntoIter::new([
+    for icon in [
         HELMET_ICON.to_vec(),
         CHEST_ICON.to_vec(),
         ARM_ICON.to_vec(),
         WAIST_ICON.to_vec(),
         LEG_ICON.to_vec(),
         TALISMAN_ICON.to_vec(),
-    ]) {
+    ] {
         col_titles = col_titles.push(
             Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
                 .width(Length::Fill)
@@ -253,7 +250,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
             .align_items(Align::Center)
             .spacing(5)
             .push(Text::new(LocalizedArmor(armor).to_string()));
-        for (style, name, value) in array::IntoIter::new([
+        for (style, name, value) in [
             (
                 style_iced::Container::Defense,
                 InterfaceSymbol::Defense,
@@ -280,7 +277,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
                 InterfaceSymbol::Dragon,
                 armor.dragon,
             ),
-        ]) {
+        ] {
             col_armor_stats = col_armor_stats.push(
                 Row::new()
                     .spacing(10)

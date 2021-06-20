@@ -215,14 +215,14 @@ fn brute_force_search_builds(
                     &build.leg,
                     &build.talisman,
                 ])
-                .zip(array::IntoIter::new([
+                .zip([
                     &old_build.helmet,
                     &old_build.chest,
                     &old_build.arm,
                     &old_build.waist,
                     &old_build.leg,
                     &old_build.talisman,
-                ])) {
+                ]) {
                     match couple {
                         (None, Some(_)) => {
                             new_has_better_none = true;

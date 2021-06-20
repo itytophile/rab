@@ -1,4 +1,4 @@
-use std::{fs, array, path::Path};
+use std::{array, fs, path::Path};
 
 use crate::{ARMORS_PATH, LOCALE_DIR_PATH};
 

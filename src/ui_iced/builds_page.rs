@@ -1,5 +1,3 @@
-use std::array;
-
 use iced::{
     widget::svg::{Handle, Svg},
     Align, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Rule, Scrollable,
@@ -87,14 +85,14 @@ impl BuildsPage for MainApp {
             .push(Space::with_width(Length::Units(200)))
             .push(Space::with_width(Length::Units(100)));
 
-        for icon in array::IntoIter::new([
+        for icon in [
             HELMET_ICON.to_vec(),
             CHEST_ICON.to_vec(),
             ARM_ICON.to_vec(),
             WAIST_ICON.to_vec(),
             LEG_ICON.to_vec(),
             TALISMAN_ICON.to_vec(),
-        ]) {
+        ] {
             col_titles = col_titles.push(
                 Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
                     .width(Length::Fill)

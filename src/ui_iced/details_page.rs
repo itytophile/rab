@@ -1,5 +1,3 @@
-use std::array;
-
 use iced::{
     widget::svg::{Handle, Svg},
     Align, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
@@ -31,14 +29,14 @@ impl DetailsPage for MainApp {
         let mut row_title = Row::new()
             .push(Space::with_width(Length::Units(SCROLL_PADDING)))
             .push(Space::with_width(Length::Units(SKILL_AMOUNT_SIZE)));
-        for icon in array::IntoIter::new([
+        for icon in [
             HELMET_ICON.to_vec(),
             CHEST_ICON.to_vec(),
             ARM_ICON.to_vec(),
             WAIST_ICON.to_vec(),
             LEG_ICON.to_vec(),
             TALISMAN_ICON.to_vec(),
-        ]) {
+        ] {
             row_title = row_title.push(
                 Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
                     .width(Length::Fill)
@@ -56,14 +54,14 @@ impl DetailsPage for MainApp {
 
         row = row.push(col_skills);
 
-        for part in std::array::IntoIter::new([
+        for part in [
             &build.helmet,
             &build.chest,
             &build.arm,
             &build.waist,
             &build.leg,
             &build.talisman,
-        ]) {
+        ] {
             row = row.push::<Element<Msg>>(if part.is_none() {
                 Container::new(Text::new(InterfaceSymbol::Free))
                     .width(Length::Fill)
