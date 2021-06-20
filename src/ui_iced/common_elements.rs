@@ -1,4 +1,7 @@
-use std::{array, cmp::Ordering};
+use std::{
+    array,
+    cmp::Reverse,
+};
 
 use iced::{
     button, scrollable, text_input,
@@ -7,7 +10,10 @@ use iced::{
     Slider, Space, Text, TextInput, VerticalAlignment,
 };
 
-use crate::{locale::{LocalizedArmor, LocalizedSkill}, style_iced};
+use crate::{
+    locale::{LocalizedArmor, LocalizedSkill},
+    style_iced,
+};
 
 use rab_core::{
     armor_and_skills::{Armor, Skill},
@@ -208,11 +214,11 @@ pub(super) fn build_part_to_button<'a>(
     }
 }
 
-pub(super) fn update_button<'a>(
-    state: &'a mut button::State,
+pub(super) fn update_button(
+    state: &'_ mut button::State,
     update_state: UpdateState,
     msg: Msg,
-) -> Button<'a, Msg> {
+) -> Button<'_, Msg> {
     let b = Button::new(
         state,
         Row::new()
@@ -292,7 +298,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
             )
         }
 
-        if armor.skills.len() > 0 || armor.slots.len() > 0 {
+        if !armor.skills.is_empty() || !armor.slots.is_empty() {
             col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
         }
 
@@ -300,7 +306,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
             col_armor_stats = col_armor_stats.push(skill_and_amount(skill, *amount))
         }
 
-        if armor.skills.len() > 0 && armor.slots.len() > 0 {
+        if !armor.skills.is_empty() && !armor.slots.is_empty() {
             col_armor_stats = col_armor_stats.push(Space::with_height(Length::Units(10)));
         }
 
@@ -309,22 +315,9 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
 
         let mut couple_slot_jewel = Vec::with_capacity(3);
 
-        let mut jewel_skills: Vec<Skill> = jewel_skills
-            .iter()
-            .copied()
-            .filter(Option::is_some)
-            .map(Option::unwrap)
-            .collect();
+        let mut jewel_skills: Vec<Skill> = jewel_skills.iter().copied().flatten().collect();
         // reverse order
-        jewel_skills.sort_unstable_by(|a, b| {
-            if a.get_jewel_size() > b.get_jewel_size() {
-                Ordering::Less
-            } else if a.get_jewel_size() < b.get_jewel_size() {
-                Ordering::Greater
-            } else {
-                Ordering::Equal
-            }
-        });
+        jewel_skills.sort_unstable_by_key(|a| Reverse(a.get_jewel_size()));
 
         // to be sure that the jewel will be on the most little slot possible
         let mut to_remove = None;

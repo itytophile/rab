@@ -135,9 +135,9 @@ impl Display for InterfaceSymbol {
     }
 }
 
-impl Into<String> for InterfaceSymbol {
-    fn into(self) -> String {
-        self.to_string()
+impl From<InterfaceSymbol> for String {
+    fn from(sy: InterfaceSymbol) -> Self {
+        sy.to_string()
     }
 }
 

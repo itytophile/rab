@@ -3,7 +3,10 @@ use iced::{
     Scrollable, Slider, Space, Text, TextInput,
 };
 
-use crate::{locale::{InterfaceSymbol, LocalizedSkill}, style_iced};
+use crate::{
+    locale::{InterfaceSymbol, LocalizedSkill},
+    style_iced,
+};
 
 use rab_core::armor_and_skills::Armor;
 
@@ -74,12 +77,13 @@ impl TalismanPage for MainApp {
                         Container::new(get_talisman_editor(
                             &mut self.state_talisman_desc_scroll,
                             &mut self.states_values_slider_talisman_slot,
-                            &mut self.state_edit_text_input,
-                            &self.value_edit_text_input,
+                            (&mut self.state_edit_text_input, &self.value_edit_text_input),
                             &mut self.edit_wish_fields,
                             &self.filtered_wish_choices,
-                            &mut self.state_filter_text_input,
-                            &self.value_filter_text_input,
+                            (
+                                &mut self.state_filter_text_input,
+                                &self.value_filter_text_input,
+                            ),
                             &mut self.state_edit_add_skill_button,
                         ))
                         .padding(10)
@@ -187,17 +191,19 @@ impl TalismanPage for MainApp {
     }
 }
 
+type TextInputData<'a> = (&'a mut text_input::State, &'a str);
+
 fn get_talisman_editor<'a>(
     state_scroll: &'a mut scrollable::State,
     states_values_slider_talisman_slot: &'a mut [(slider::State, u8)],
-    state_text_input: &'a mut text_input::State,
-    value_text_input: &str,
+    text_input_data: TextInputData<'a>,
     wish_fields: &'a mut [WishField],
     skill_list: &'a [LocalizedSkill],
-    state_filter_text_input: &'a mut text_input::State,
-    value_filter_text_input: &'a str,
+    filter_text_input_data: TextInputData<'a>,
     state_add_button: &'a mut button::State,
 ) -> Scrollable<'a, Msg> {
+    let (state_text_input, value_text_input) = text_input_data;
+    let (state_filter_text_input, value_filter_text_input) = filter_text_input_data;
     let text_input = TextInput::new(
         state_text_input,
         &InterfaceSymbol::TalismanName.to_string(),
@@ -267,7 +273,7 @@ fn talisman_to_element<'a>(
         talisman_desc = talisman_desc.push(skill_and_amount(skill, *amount))
     }
 
-    if talisman.skills.len() > 0 && talisman.slots.len() > 0 {
+    if !talisman.skills.is_empty() && !talisman.slots.is_empty() {
         talisman_desc = talisman_desc.push(Space::with_height(Length::Units(10)))
     }
 

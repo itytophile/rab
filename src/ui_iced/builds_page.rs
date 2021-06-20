@@ -21,7 +21,7 @@ pub trait BuildsPage {
 }
 
 impl BuildsPage for MainApp {
-    fn get_builds_page<'a>(&'a mut self) -> Element<'a, Msg> {
+    fn get_builds_page(&'_ mut self) -> Element<'_, Msg> {
         let builds = &self.saved_builds;
         let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
             .align_items(Align::Center)

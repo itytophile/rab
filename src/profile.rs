@@ -12,7 +12,7 @@ use ron::{
 // this profile will be useful for saving user
 // preferences after closing RAB, like the language
 pub fn get_profile(path: &str) -> Result<HashMap<String, String>, Error> {
-    Ok(from_reader(File::open(path)?)?)
+    from_reader(File::open(path)?)
 }
 
 pub fn save_profile(profile: &HashMap<String, String>, path: &str) -> Result<String, Error> {

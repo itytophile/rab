@@ -12,12 +12,17 @@ use std::{
     path::Path,
 };
 
-use crate::{ARMORS_PATH, LOCALE_DIR_PATH, file::{get_armor_list, get_talismans, save_talismans_to_file}, locale::{get_locales, Locale, LocalizedSkill}, profile::{get_profile, save_profile}, style_iced, update::download_armors_and_locales};
+use crate::{
+    file::{get_armor_list, get_talismans, save_talismans_to_file},
+    locale::{get_locales, Locale, LocalizedSkill},
+    profile::{get_profile, save_profile},
+    style_iced,
+    update::download_armors_and_locales,
+    ARMORS_PATH, LOCALE_DIR_PATH,
+};
 
 use rab_core::{
-    armor_and_skills::{
-        Armor, Gender, Skill,
-    },
+    armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, Build},
 };
 
@@ -142,21 +147,23 @@ pub struct MainApp {
     saved_builds: HashMap<String, Build>,
 
     state_builds_menu_button: button::State,
-    states_saved_builds_button: Vec<(
-        button::State,
-        button::State,
-        button::State,
-        button::State,
-        button::State,
-        button::State, //talisman
-        button::State, //weapon
-        button::State, //remove
-    )>,
+    states_saved_builds_button: Vec<SavedBuildsButtonStates>,
     details_build_name: String,
 
     focused_build: Option<Build>,
     total_skills_and_amounts_focused_build: Vec<(Skill, u8)>, // to not sort everytime
 }
+
+type SavedBuildsButtonStates = (
+    button::State,
+    button::State,
+    button::State,
+    button::State,
+    button::State,
+    button::State, //talisman
+    button::State, //weapon
+    button::State, //remove
+);
 
 #[derive(Clone, Copy)]
 enum UpdateState {
@@ -300,8 +307,7 @@ impl MainApp {
     }
 }
 
-fn get_all_armors_from_file(
-) -> Result<(Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>), ron::Error> {
+fn get_all_armors_from_file() -> Result<AllArmors, ron::Error> {
     Ok((
         get_armor_list(HELMETS_PATH)?,
         get_armor_list(CHESTS_PATH)?,
@@ -311,19 +317,19 @@ fn get_all_armors_from_file(
     ))
 }
 
+type AllArmors = (Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>, Vec<Armor>);
+
 fn create_locale_and_armors_dir() {
     let armors_path = Path::new(ARMORS_PATH);
     if !armors_path.is_dir() {
-        match fs::create_dir(armors_path) {
-            Err(err) => println!("Can't create armors directory:\n{}", err),
-            _ => {}
+        if let Err(err) = fs::create_dir(armors_path) {
+            println!("Can't create armors directory:\n{}", err)
         }
     }
     let locale_path = Path::new(LOCALE_DIR_PATH);
     if !locale_path.is_dir() {
-        match fs::create_dir(locale_path) {
-            Err(err) => println!("Can't create locale directory:\n{}", err),
-            _ => {}
+        if let Err(err) = fs::create_dir(locale_path) {
+            println!("Can't create locale directory:\n{}", err)
         }
     }
 }
@@ -341,7 +347,7 @@ fn save_builds(builds: &HashMap<String, Build>, path: &str) -> Result<String, Er
 }
 
 fn get_saved_builds(path: &str) -> Result<HashMap<String, Build>, Error> {
-    Ok(from_reader(fs::File::open(path)?)?)
+    from_reader(fs::File::open(path)?)
 }
 
 impl Application for MainApp {
@@ -403,7 +409,7 @@ impl Application for MainApp {
         let selected_locale = profile
             .get("lang")
             .cloned()
-            .unwrap_or("English".to_string());
+            .unwrap_or_else(|| "English".to_string());
 
         let theme = match profile.get("theme").unwrap_or(&"dark".to_string()).as_str() {
             "light" => style_iced::Theme::Light,
