@@ -1,5 +1,3 @@
-mod armor_and_skills;
-mod build_search;
 mod locale;
 mod profile;
 mod style_iced;

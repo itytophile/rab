@@ -5,7 +5,7 @@ use iced::{
     Align, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
 };
 
-use crate::{locale::InterfaceSymbol, style_iced};
+use crate::{locale::{InterfaceSymbol, LocalizedSkill}, style_iced};
 
 use super::{
     common_elements::{
@@ -78,7 +78,7 @@ impl DetailsPage for MainApp {
         for jewel in build.weapon_jewels.iter() {
             if let Some(jewel) = jewel {
                 weapon_jewels_row = weapon_jewels_row.push(
-                    Container::new(Text::new(jewel.to_string()))
+                    Container::new(Text::new(LocalizedSkill(*jewel).to_string()))
                         .center_x()
                         .style(style_iced::Container::Ice)
                         .width(Length::Units(170)),

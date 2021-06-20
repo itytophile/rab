@@ -14,8 +14,8 @@ keywords = ["monster", "hunter", "rise", "armor", "search"]
 serde = "1.0"
 ron = "0.6"
 iced = { version = "0.3", features = ["svg", "tokio"] }
-itertools = "0.10"
 once_cell = "1.7"
 lexical-sort = "0.3"
 reqwest = "0.11"
 iced_futures = "0.3"
+rab-core = { version = "", path = "rab-core" }

@@ -7,10 +7,11 @@ use iced::{
     Slider, Space, Text, TextInput, VerticalAlignment,
 };
 
-use crate::{
+use crate::{locale::{LocalizedArmor, LocalizedSkill}, style_iced};
+
+use rab_core::{
     armor_and_skills::{Armor, Skill},
     build_search::{Build, Jewels},
-    style_iced,
 };
 
 use super::{Msg, UpdateState, WishField};
@@ -131,10 +132,10 @@ pub(super) fn get_column_builds_found<'a>(
 
 pub(super) fn get_wishfield_row<'a>(
     wish_field: &'a mut WishField,
-    skill_list: &'a [Skill],
+    skill_list: &'a [LocalizedSkill],
     disable_remove_button: bool,
     on_remove: Msg,
-    on_skill_selected: impl Fn(Skill) -> Msg + 'static,
+    on_skill_selected: impl Fn(LocalizedSkill) -> Msg + 'static,
     on_slider_changed: impl Fn(u8) -> Msg + 'static,
 ) -> Row<'a, Msg> {
     let pick_list = PickList::new(
@@ -188,7 +189,7 @@ pub(super) fn build_part_to_button<'a>(
     let button = Button::new(
         state,
         Container::new(Text::new(if let Some((armor, _)) = build_part {
-            armor.to_string()
+            LocalizedArmor(armor.clone()).to_string()
         } else {
             InterfaceSymbol::Free.to_string()
         }))
@@ -245,7 +246,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
         let mut col_armor_stats = Column::new()
             .align_items(Align::Center)
             .spacing(5)
-            .push(Text::new(armor.to_string()));
+            .push(Text::new(LocalizedArmor(armor.clone()).to_string()));
         for (style, name, value) in array::IntoIter::new([
             (
                 style_iced::Container::Defense,
@@ -367,7 +368,7 @@ pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> Container<'a, Msg> {
     Container::new(Text::new(
         InterfaceSymbol::TemplateJewelOnSlot
             .to_string()
-            .replace("{skill}", &skill.to_string())
+            .replace("{skill}", &LocalizedSkill(*skill).to_string())
             .replace("{size}", &slot.to_string()),
     ))
     .width(Length::Units(170))
@@ -378,7 +379,7 @@ pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> Container<'a, Msg> {
 pub(super) const SKILL_AMOUNT_SIZE: u16 = 150;
 
 pub(super) fn skill_and_amount<'a>(skill: &Skill, amount: u8) -> Container<'a, Msg> {
-    Container::new(Text::new(format!("{} x{}", skill, amount)))
+    Container::new(Text::new(format!("{} x{}", LocalizedSkill(*skill), amount)))
         .width(Length::Units(SKILL_AMOUNT_SIZE))
         .center_x()
         .style(style_iced::Container::Fire)

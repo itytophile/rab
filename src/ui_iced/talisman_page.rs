@@ -3,11 +3,9 @@ use iced::{
     Scrollable, Slider, Space, Text, TextInput,
 };
 
-use crate::{
-    armor_and_skills::{Armor, Skill},
-    locale::InterfaceSymbol,
-    style_iced,
-};
+use crate::{locale::{InterfaceSymbol, LocalizedSkill}, style_iced};
+
+use rab_core::armor_and_skills::Armor;
 
 use super::{
     common_elements::{
@@ -195,7 +193,7 @@ fn get_talisman_editor<'a>(
     state_text_input: &'a mut text_input::State,
     value_text_input: &str,
     wish_fields: &'a mut [WishField],
-    skill_list: &'a [Skill],
+    skill_list: &'a [LocalizedSkill],
     state_filter_text_input: &'a mut text_input::State,
     value_filter_text_input: &'a str,
     state_add_button: &'a mut button::State,

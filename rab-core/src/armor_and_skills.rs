@@ -4,12 +4,7 @@ use ron::{
     Error,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Display,
-    fs::{self, File},
-};
-
-use crate::locale::Localization;
+use std::fs::{self, File};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub enum Gender {
@@ -37,12 +32,6 @@ pub struct Armor {
     pub ice: i8,
     pub dragon: i8,
     pub gender: Gender,
-}
-
-impl Display for Armor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.apply_locale(&*crate::LOCALE.lock().unwrap()))
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -227,12 +216,6 @@ use Skill::*;
 impl Default for Skill {
     fn default() -> Self {
         Botanist
-    }
-}
-
-impl Display for Skill {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.apply_locale(&*crate::LOCALE.lock().unwrap()))
     }
 }
 

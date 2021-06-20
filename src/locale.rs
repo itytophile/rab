@@ -1,9 +1,10 @@
 use ron::{de::from_reader, Error};
 use serde::Deserialize;
+use std::ops::Deref;
 use std::{collections::HashMap, fs::File};
 use std::{fmt::Display, fs};
 
-use crate::armor_and_skills::{Armor, Skill};
+use rab_core::armor_and_skills::{Armor, Skill};
 
 #[derive(Deserialize, Clone)]
 pub struct Locale {
@@ -137,5 +138,46 @@ impl Display for InterfaceSymbol {
 impl Into<String> for InterfaceSymbol {
     fn into(self) -> String {
         self.to_string()
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct LocalizedArmor(pub Armor);
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
+pub struct LocalizedSkill(pub Skill);
+
+impl Display for LocalizedArmor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.apply_locale(&*crate::LOCALE.lock().unwrap())
+        )
+    }
+}
+
+impl Display for LocalizedSkill {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.apply_locale(&*crate::LOCALE.lock().unwrap())
+        )
+    }
+}
+
+impl Deref for LocalizedArmor {
+    type Target = Armor;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for LocalizedSkill {
+    type Target = Skill;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

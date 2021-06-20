@@ -13,15 +13,18 @@ use std::{
 };
 
 use crate::{
-    armor_and_skills::{
-        get_armor_list, get_talismans, save_talismans_to_file, Armor, Gender, Skill,
-    },
-    build_search::{pre_selection_then_brute_force_search, Build},
-    locale::{get_locales, Locale},
+    locale::{get_locales, Locale, LocalizedSkill},
     profile::{get_profile, save_profile},
     style_iced,
     update::download_armors_and_locales,
     ARMORS_PATH, LOCALE_DIR_PATH,
+};
+
+use rab_core::{
+    armor_and_skills::{
+        get_armor_list, get_talismans, save_talismans_to_file, Armor, Gender, Skill,
+    },
+    build_search::{pre_selection_then_brute_force_search, Build},
 };
 
 use iced::{
@@ -40,8 +43,8 @@ use self::{
 };
 
 struct WishField {
-    state_pick_list: pick_list::State<Skill>,
-    selected: Skill,
+    state_pick_list: pick_list::State<LocalizedSkill>,
+    selected: LocalizedSkill,
     state_remove_button: button::State,
     state_slider: slider::State,
     value_slider: u8,
@@ -73,8 +76,8 @@ pub struct MainApp {
     state_filter_text_input: text_input::State,
     value_filter_text_input: String,
 
-    sorted_wish_choices: Vec<Skill>,
-    filtered_wish_choices: Vec<Skill>,
+    sorted_wish_choices: Vec<LocalizedSkill>,
+    filtered_wish_choices: Vec<LocalizedSkill>,
 
     helmets: Vec<Armor>,
     chests: Vec<Armor>,
@@ -193,7 +196,7 @@ impl Default for Page {
 
 #[derive(Debug, Clone)]
 pub enum Msg {
-    WishSelected(usize, Skill),
+    WishSelected(usize, LocalizedSkill),
     AddWish,
     RemoveWish(usize),
     SliderChanged(usize, u8),
@@ -208,7 +211,7 @@ pub enum Msg {
     CancelEdition,
     TalismanSlotChanged(usize, u8),
     EditTalismanName(String),
-    EditSkillSelected(usize, Skill),
+    EditSkillSelected(usize, LocalizedSkill),
     EditAddSkill,
     EditRemoveSkill(usize),
     EditSkillSliderChanged(usize, u8),
@@ -417,7 +420,8 @@ impl Application for MainApp {
 
         *super::LOCALE.lock().unwrap() = locales.get(&selected_locale).cloned();
 
-        let mut sorted_wish_choices = Skill::ALL.to_vec();
+        let mut sorted_wish_choices: Vec<LocalizedSkill> =
+            Skill::ALL.iter().map(|s| LocalizedSkill(*s)).collect();
         sorted_wish_choices
             .sort_unstable_by(|a, b| natural_lexical_cmp(&a.to_string(), &b.to_string()));
 
@@ -492,7 +496,7 @@ impl Application for MainApp {
                 let wishes: Vec<(Skill, u8)> = self
                     .wish_fields
                     .iter()
-                    .map(|wish| (wish.selected, wish.value_slider))
+                    .map(|wish| (wish.selected.0, wish.value_slider))
                     .collect();
                 self.builds = pre_selection_then_brute_force_search(
                     &wishes,
@@ -539,7 +543,7 @@ impl Application for MainApp {
 
                 for &(skill, amount) in talisman.skills.iter() {
                     self.edit_wish_fields.push(WishField {
-                        selected: skill,
+                        selected: LocalizedSkill(skill),
                         value_slider: amount,
                         ..Default::default()
                     })
@@ -560,7 +564,7 @@ impl Application for MainApp {
                 talisman.skills = self
                     .edit_wish_fields
                     .iter()
-                    .map(|field| (field.selected, field.value_slider))
+                    .map(|field| (field.selected.0, field.value_slider))
                     .collect();
                 talisman.slots = self
                     .states_values_slider_talisman_slot

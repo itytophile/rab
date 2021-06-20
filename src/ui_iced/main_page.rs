@@ -3,7 +3,9 @@ use iced::{
     Space, Svg, Text,
 };
 
-use crate::{armor_and_skills::Gender, locale::InterfaceSymbol, style_iced};
+use crate::{locale::InterfaceSymbol, style_iced};
+
+use rab_core::armor_and_skills::Gender;
 
 use super::{
     common_elements::{
