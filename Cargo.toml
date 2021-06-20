@@ -9,6 +9,10 @@ license = "GPL-3.0"
 keywords = ["monster", "hunter", "rise", "armor", "search"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [
+    "rab-core"
+]
 
 [dependencies]
 serde = "1.0"
