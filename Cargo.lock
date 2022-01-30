@@ -2245,6 +2245,7 @@ name = "rab-core"
 version = "0.3.3"
 dependencies = [
  "itertools",
+ "ron",
  "serde",
 ]
 

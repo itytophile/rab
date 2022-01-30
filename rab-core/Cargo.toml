@@ -13,3 +13,6 @@ keywords = ["monster", "hunter", "rise", "armor", "search"]
 [dependencies]
 itertools = "0.10"
 serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+ron = "0.7"
