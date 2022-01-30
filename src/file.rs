@@ -11,10 +11,7 @@ use rab_core::armor_and_skills::{armor_to_talisman, talisman_to_armor, Armor, Ta
 pub fn save_talismans_to_file(talismans: &[Armor], path: &str) -> Result<String, Error> {
     let talismans: Vec<Talisman> = talismans.iter().map(armor_to_talisman).collect();
 
-    let text = to_string_pretty(
-        &talismans,
-        PrettyConfig::new().with_indentor("  ".to_string()),
-    )?;
+    let text = to_string_pretty(&talismans, PrettyConfig::new().indentor("  ".to_string()))?;
 
     fs::write(path, text)?;
 

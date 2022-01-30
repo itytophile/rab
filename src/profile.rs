@@ -16,7 +16,7 @@ pub fn get_profile(path: &str) -> Result<HashMap<String, String>, Error> {
 }
 
 pub fn save_profile(profile: &HashMap<String, String>, path: &str) -> Result<String, Error> {
-    let text = to_string_pretty(profile, PrettyConfig::new().with_indentor("  ".to_string()))?;
+    let text = to_string_pretty(profile, PrettyConfig::new().indentor("  ".to_string()))?;
 
     write(path, text)?;
 

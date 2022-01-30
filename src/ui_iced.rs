@@ -337,7 +337,7 @@ fn create_locale_and_armors_dir() {
 use lexical_sort::natural_lexical_cmp;
 
 fn save_builds(builds: &HashMap<String, Build>, path: &str) -> Result<String, Error> {
-    let text = to_string_pretty(builds, PrettyConfig::new().with_indentor("  ".to_string()))?;
+    let text = to_string_pretty(builds, PrettyConfig::new().indentor("  ".to_string()))?;
 
     fs::write(path, text)?;
 
