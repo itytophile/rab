@@ -2228,7 +2228,7 @@ dependencies = [
 
 [[package]]
 name = "rab"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "iced",
  "iced_futures",
@@ -2242,7 +2242,7 @@ dependencies = [
 
 [[package]]
 name = "rab-core"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "itertools",
  "ron",

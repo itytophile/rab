@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 pub enum Gender {
     Female,
     Male,
-    Neutral,
 }
 
 impl Default for Gender {
     fn default() -> Self {
-        Gender::Neutral
+        Gender::Female
     }
 }
 
@@ -25,7 +24,7 @@ pub struct Armor {
     pub thunder: i8,
     pub ice: i8,
     pub dragon: i8,
-    pub gender: Gender,
+    pub gender: Option<Gender>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

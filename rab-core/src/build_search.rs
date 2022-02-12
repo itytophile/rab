@@ -423,7 +423,13 @@ fn search_best_candidates(wishes: &[(Skill, u8)], armors: &[Armor], gender: Gend
     // trivial sort
     let armors: Vec<&Armor> = armors
         .iter()
-        .filter(|armor| armor.gender == Gender::Neutral || armor.gender == gender)
+        .filter(|armor| {
+            if let Some(armor_gender) = armor.gender {
+                gender == armor_gender
+            } else {
+                true
+            }
+        })
         .filter(|armor| {
             for (skill, _) in wishes {
                 // check if the armor can accept a jewel for one of the wanted skills
