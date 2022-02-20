@@ -29,9 +29,9 @@ pub struct Armor {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Talisman {
-    name: String,
-    skills: Vec<(Skill, u8)>,
-    slots: Vec<u8>,
+    pub name: String,
+    pub skills: Vec<(Skill, u8)>,
+    pub slots: Vec<u8>,
 }
 
 impl PartialEq for Armor {
