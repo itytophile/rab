@@ -1,3 +1,5 @@
+Web version available: https://itytophile.github.io/rab/
+
 # RAB
 
 Rusty Armor Builds - Monster Hunter Rise Armor Set Creation Tool
