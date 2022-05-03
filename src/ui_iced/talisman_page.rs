@@ -1,6 +1,6 @@
 use iced::{
-    button, scrollable, slider, text_input, Align, Button, Column, Container, Element, Length, Row,
-    Scrollable, Slider, Space, Text, TextInput,
+    button, scrollable, slider, text_input, Alignment, Button, Column, Container, Element, Length,
+    Row, Scrollable, Slider, Space, Text, TextInput,
 };
 
 use crate::{
@@ -46,7 +46,7 @@ impl TalismanPage for MainApp {
             .push(back_button);
 
         let mut talisman_scroll = Scrollable::new(&mut self.state_talisman_scroll)
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .padding(SCROLL_PADDING)
             .spacing(10);
 
@@ -72,7 +72,7 @@ impl TalismanPage for MainApp {
         if let Some(index) = &self.selected_talisman {
             let view = if self.is_editing {
                 Column::new()
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(
                         Container::new(get_talisman_editor(
                             &mut self.state_talisman_desc_scroll,
@@ -126,7 +126,7 @@ impl TalismanPage for MainApp {
                     &mut self.state_talisman_desc_scroll,
                 );
                 Column::new()
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(
                         Container::new(talisman_desc)
                             .padding(10)
@@ -177,7 +177,7 @@ impl TalismanPage for MainApp {
                     .push(discard_button)
                     .push(save_button),
             )
-            .align_items(Align::Center);
+            .align_items(Alignment::Center);
         let column_right = get_column_builds_found(
             &mut self.state_builds_scroll,
             &self.builds,
@@ -228,7 +228,7 @@ fn get_talisman_editor<'a>(
     let mut scroll = Scrollable::new(state_scroll)
         .spacing(COLUMN_SPACING)
         .padding(SCROLL_PADDING)
-        .align_items(Align::Center)
+        .align_items(Alignment::Center)
         .push(text_input)
         .push(row);
 
@@ -265,7 +265,7 @@ fn talisman_to_element<'a>(
 ) -> Scrollable<'a, Msg> {
     let mut talisman_desc = Scrollable::new(state_scroll)
         .max_height(200)
-        .align_items(Align::Center)
+        .align_items(Alignment::Center)
         .spacing(5)
         .push(Text::new(&talisman.name));
 

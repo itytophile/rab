@@ -1,4 +1,4 @@
-use iced::{Align, Button, Column, Container, Element, Length, Row, Space, Text};
+use iced::{Alignment, Button, Column, Container, Element, Length, Row, Space, Text};
 
 use crate::locale::InterfaceSymbol;
 
@@ -31,7 +31,7 @@ impl LangPage for MainApp {
         }
 
         Column::new()
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .padding(5)
             .push(
                 Container::new(locales_choice)

@@ -1,6 +1,6 @@
 use iced::{
     widget::svg::{Handle, Svg},
-    Align, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
+    Alignment, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
 };
 
 use crate::{
@@ -125,7 +125,7 @@ impl DetailsPage for MainApp {
                     .padding(SCROLL_PADDING)
                     .height(Length::Fill)
                     .spacing(10)
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .push(row)
                     .push(
                         Container::new(weapon_jewels_row)

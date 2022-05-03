@@ -1,10 +1,10 @@
 use std::cmp::Reverse;
 
 use iced::{
-    button, scrollable, text_input,
+    alignment, button, scrollable, text_input,
     widget::svg::{Handle, Svg},
-    Align, Button, Column, Container, HorizontalAlignment, Length, PickList, Row, Rule, Scrollable,
-    Slider, Space, Text, TextInput, VerticalAlignment,
+    Alignment, Button, Column, Container, Length, PickList, Row, Rule, Scrollable, Slider, Space,
+    Text, TextInput,
 };
 
 use crate::{
@@ -59,7 +59,7 @@ pub(super) fn get_column_builds_found<'a>(
     )],
 ) -> Column<'a, Msg> {
     let mut builds_scrolls = Scrollable::new(state_builds_scroll)
-        .align_items(Align::Center)
+        .align_items(Alignment::Center)
         .spacing(10)
         .padding(SCROLL_PADDING);
     let size = builds.len();
@@ -74,8 +74,8 @@ pub(super) fn get_column_builds_found<'a>(
             let mut details_button = Button::new(
                 &mut state_button.6,
                 Text::new("?")
-                    .vertical_alignment(VerticalAlignment::Center)
-                    .horizontal_alignment(HorizontalAlignment::Center),
+                    .vertical_alignment(alignment::Vertical::Center)
+                    .horizontal_alignment(alignment::Horizontal::Center),
             )
             .style(style_iced::Button::Talisman);
             /*
@@ -85,7 +85,7 @@ pub(super) fn get_column_builds_found<'a>(
             */
             details_button = details_button.on_press(Msg::BuildDetails(key));
             let row_build = Row::new()
-                .align_items(Align::Center)
+                .align_items(Alignment::Center)
                 .spacing(BUTTON_SPACING)
                 .push(details_button.width(Length::Units(DETAIL_BUTTON_SIZE)))
                 .push(build_part_to_button(&mut state_button.0, &build.helmet))
@@ -235,7 +235,7 @@ pub(super) fn update_button(
                     UpdateState::Problem => InterfaceSymbol::ProblemCheckConsole,
                 })
                 .height(Length::Fill)
-                .vertical_alignment(VerticalAlignment::Center),
+                .vertical_alignment(alignment::Vertical::Center),
             ),
     );
     match update_state {
@@ -247,7 +247,7 @@ pub(super) fn update_button(
 pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Msg> {
     if let Some((armor, jewel_skills)) = armor {
         let mut col_armor_stats = Column::new()
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .spacing(5)
             .push(Text::new(LocalizedArmor(armor).to_string()));
         for (style, name, value) in [
@@ -290,7 +290,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
                     .push(
                         Text::new(value.to_string())
                             .width(Length::Units(30))
-                            .horizontal_alignment(iced::HorizontalAlignment::Right),
+                            .horizontal_alignment(iced::alignment::Horizontal::Right),
                     ),
             )
         }

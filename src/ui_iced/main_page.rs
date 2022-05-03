@@ -1,6 +1,6 @@
 use iced::{
-    widget::svg::Handle, Align, Button, Column, Element, Length, Radio, Row, Scrollable, Slider,
-    Space, Svg, Text,
+    widget::svg::Handle, Alignment, Button, Column, Element, Length, Radio, Row, Scrollable,
+    Slider, Space, Svg, Text,
 };
 
 use crate::{locale::InterfaceSymbol, style_iced};
@@ -25,7 +25,7 @@ impl MainPage for MainApp {
         let mut scrollable_wishes = Scrollable::new(&mut self.scroll)
             .padding(SCROLL_PADDING)
             .spacing(10)
-            .align_items(Align::Center);
+            .align_items(Alignment::Center);
         let size = self.wish_fields.len();
         for (key, wish_field) in self.wish_fields.iter_mut().enumerate() {
             scrollable_wishes = scrollable_wishes.push(get_wishfield_row(
@@ -90,7 +90,7 @@ impl MainPage for MainApp {
         .on_press(Msg::Search);
 
         let col_menu_buttons = Column::new()
-            .align_items(Align::End)
+            .align_items(Alignment::End)
             .spacing(BUTTON_SPACING)
             .push(builds_menu_button)
             .push(talisman_button);
@@ -124,12 +124,12 @@ impl MainPage for MainApp {
             .push(
                 Scrollable::new(&mut self.state_desc_scroll)
                     .push(armor_desc_to_element(&self.armor_desc))
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .height(Length::FillPortion(3)),
             )
             .push(Space::with_height(Length::Fill))
             .push(sliders_weapon_slot)
-            .align_items(Align::Center);
+            .align_items(Alignment::Center);
 
         let column_right = Column::new()
             .spacing(10)

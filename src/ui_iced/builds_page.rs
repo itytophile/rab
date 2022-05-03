@@ -1,7 +1,7 @@
 use iced::{
+    alignment,
     widget::svg::{Handle, Svg},
-    Align, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Rule, Scrollable,
-    Space, Text,
+    Alignment, Button, Column, Container, Element, Length, Row, Rule, Scrollable, Space, Text,
 };
 
 use crate::{locale::InterfaceSymbol, style_iced};
@@ -22,7 +22,7 @@ impl BuildsPage for MainApp {
     fn get_builds_page(&'_ mut self) -> Element<'_, Msg> {
         let builds = &self.saved_builds;
         let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .spacing(10)
             .padding(SCROLL_PADDING);
         let size = builds.len();
@@ -38,21 +38,21 @@ impl BuildsPage for MainApp {
                     &mut state_button.6,
                     Text::new(name)
                         .width(Length::Units(200))
-                        .horizontal_alignment(HorizontalAlignment::Center),
+                        .horizontal_alignment(alignment::Horizontal::Center),
                 )
                 .width(Length::Units(200)) // seems repetitive but needed for centering
                 // the icons
                 .style(style_iced::Button::Talisman);
                 details_button = details_button.on_press(Msg::SavedBuildDetails(name.clone()));
                 let row_build = Row::new()
-                    .align_items(Align::Center)
+                    .align_items(Alignment::Center)
                     .spacing(BUTTON_SPACING)
                     .push(
                         Button::new(
                             &mut state_button.7,
                             Text::new(InterfaceSymbol::Remove)
                                 .width(Length::Units(100))
-                                .horizontal_alignment(HorizontalAlignment::Center),
+                                .horizontal_alignment(alignment::Horizontal::Center),
                         )
                         .style(style_iced::Button::Remove)
                         .on_press(Msg::RemoveSavedBuild(name.clone()))

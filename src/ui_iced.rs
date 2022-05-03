@@ -27,8 +27,8 @@ use rab_core::{
 };
 
 use iced::{
-    button, executor, pick_list, scrollable, slider, text_input, Application, Clipboard, Command,
-    Container, Element, Length,
+    button, executor, pick_list, scrollable, slider, text_input, Application, Command, Container,
+    Element, Length,
 };
 use ron::{
     de::from_reader,
@@ -481,7 +481,7 @@ impl Application for MainApp {
         String::from("RAB - Rusty Armor Builds")
     }
 
-    fn update(&mut self, message: Msg, _clipboard: &mut Clipboard) -> Command<Msg> {
+    fn update(&mut self, message: Msg) -> Command<Msg> {
         match message {
             Msg::WishSelected(key, wish) => {
                 self.wish_fields[key].selected = wish;
