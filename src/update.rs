@@ -1,4 +1,4 @@
-use std::{array, fs, path::Path};
+use std::{fs, path::Path};
 
 use crate::{ARMORS_PATH, LOCALE_DIR_PATH};
 
@@ -36,9 +36,8 @@ async fn download_and_write_file(base_url: &str, file: &str, dir: impl AsRef<Pat
 }
 
 async fn download_armors() -> bool {
-    let futures =
-        array::IntoIter::new([HELMETS_FILE, CHESTS_FILE, ARMS_FILE, WAISTS_FILE, LEGS_FILE])
-            .map(|file| download_and_write_file(ARMORS_BASE_URL, file, ARMORS_PATH));
+    let futures = [HELMETS_FILE, CHESTS_FILE, ARMS_FILE, WAISTS_FILE, LEGS_FILE]
+        .map(|file| download_and_write_file(ARMORS_BASE_URL, file, ARMORS_PATH));
 
     let bools = iced_futures::futures::future::join_all(futures).await;
     // all true = no problem
@@ -56,7 +55,7 @@ const RUSSIAN_LOCALE: &str = "russian.ron";
 const SPANISH_LOCALE: &str = "spanish.ron";
 
 async fn download_locales() -> bool {
-    let futures = array::IntoIter::new([
+    let futures = [
         ENGLISH_LOCALE,
         FRENCH_LOCALE,
         GERMAN_LOCALE,
@@ -64,7 +63,7 @@ async fn download_locales() -> bool {
         POLISH_LOCALE,
         RUSSIAN_LOCALE,
         SPANISH_LOCALE,
-    ])
+    ]
     .map(|file| download_and_write_file(LOCALE_BASE_URL, file, LOCALE_DIR_PATH));
     let bools = iced_futures::futures::future::join_all(futures).await;
     // all true = no problem

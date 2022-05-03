@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{
-    array,
     cmp::{min, Ordering},
     collections::HashMap,
     iter,
@@ -25,7 +24,7 @@ pub struct Build {
 impl Build {
     pub fn get_all_skills_and_amounts(&self) -> HashMap<Skill, u8> {
         let mut hm = HashMap::with_capacity(5);
-        for opt in array::IntoIter::new([
+        for opt in IntoIterator::into_iter([
             &self.helmet,
             &self.chest,
             &self.arm,
@@ -96,7 +95,7 @@ fn brute_force_search_builds(
     } = all_armor_slices;
     let mut builds: Vec<Build> = Vec::with_capacity(500);
 
-    for v in array::IntoIter::new([helmets, chests, arms, waists, legs, talismans])
+    for v in IntoIterator::into_iter([helmets, chests, arms, waists, legs, talismans])
         .map(optionify_slice_and_add_none)
         .multi_cartesian_product()
     {
@@ -104,7 +103,7 @@ fn brute_force_search_builds(
 
         // We remove from the wishes the skills that are already present
         // in the armor. Then we know what are the jewels to set.
-        let mut delta_wishes: Vec<(Skill, u8)> = wishes.iter().copied().collect();
+        let mut delta_wishes: Vec<(Skill, u8)> = wishes.to_vec();
         for &option in &[helmet, chest, arm, waist, leg, talisman] {
             if let Some(armor) = option {
                 for &(skill, amount) in &armor.skills {
@@ -207,7 +206,7 @@ fn brute_force_search_builds(
                 // don't want to use .iter() because it will give &&Option<>
                 // and don't want to use [build.helmet, build.chest, ...].iter() because it will copy
                 // the elements (they don't even implement the Copy trait)
-                for couple in array::IntoIter::new([
+                for couple in IntoIterator::into_iter([
                     &build.helmet,
                     &build.chest,
                     &build.arm,
