@@ -1,13 +1,3 @@
-use iced::{
-    widget::svg::{Handle, Svg},
-    Alignment, Button, Column, Container, Element, Length, Row, Scrollable, Space, Text, TextInput,
-};
-
-use crate::{
-    locale::{InterfaceSymbol, LocalizedSkill},
-    style_iced,
-};
-
 use super::{
     common_elements::{
         armor_desc_to_element, skill_and_amount, ARM_ICON, BUTTON_SPACING, CHEST_ICON,
@@ -16,17 +6,26 @@ use super::{
     },
     MainApp, Msg, Page,
 };
+use crate::{
+    locale::{InterfaceSymbol, LocalizedSkill},
+    style_iced,
+};
+use iced::{
+    pure,
+    widget::svg::{Handle, Svg},
+    Alignment, Length, Space, Text,
+};
 
 // need refactoring
 
 pub trait DetailsPage {
-    fn get_details_page(&mut self, on_save_builds: bool) -> Element<Msg>;
+    fn get_details_page(&self, on_save_builds: bool) -> pure::widget::Column<Msg>;
 }
 
 impl DetailsPage for MainApp {
-    fn get_details_page(&mut self, on_save_builds: bool) -> Element<Msg> {
-        let mut row = Row::new();
-        let mut row_title = Row::new()
+    fn get_details_page(&self, on_save_builds: bool) -> pure::widget::Column<Msg> {
+        let mut row = pure::row();
+        let mut row_title = pure::row()
             .push(Space::with_width(Length::Units(SCROLL_PADDING)))
             .push(Space::with_width(Length::Units(SKILL_AMOUNT_SIZE)));
         for icon in [
@@ -38,15 +37,17 @@ impl DetailsPage for MainApp {
             TALISMAN_ICON.to_vec(),
         ] {
             row_title = row_title.push(
-                Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
-                    .width(Length::Fill)
-                    .center_x(),
+                pure::container(
+                    Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)),
+                )
+                .width(Length::Fill)
+                .center_x(),
             );
         }
         let build_index = self.details_build_index;
         let build = self.focused_build.as_ref().unwrap();
 
-        let mut col_skills = Column::new().spacing(5);
+        let mut col_skills = pure::column().spacing(5);
 
         for (skill, amount) in self.total_skills_and_amounts_focused_build.iter().rev() {
             col_skills = col_skills.push(skill_and_amount(skill, *amount));
@@ -62,40 +63,40 @@ impl DetailsPage for MainApp {
             &build.leg,
             &build.talisman,
         ] {
-            row = row.push::<Element<Msg>>(if part.is_none() {
-                Container::new(Text::new(InterfaceSymbol::Free))
-                    .width(Length::Fill)
-                    .center_x()
-                    .into()
+            row = row.push(if part.is_none() {
+                pure::Element::<Msg>::from(
+                    pure::container(Text::new(InterfaceSymbol::Free))
+                        .width(Length::Fill)
+                        .center_x(),
+                )
             } else {
                 armor_desc_to_element(part).width(Length::Fill).into()
             })
         }
 
-        let mut weapon_jewels_row = Row::new()
+        let mut weapon_jewels_row = pure::row()
             .push(Text::new(InterfaceSymbol::WeaponSlots))
             .spacing(5);
 
         for jewel in build.weapon_jewels.iter().flatten() {
             weapon_jewels_row = weapon_jewels_row.push(
-                Container::new(Text::new(LocalizedSkill(*jewel).to_string()))
+                pure::container(Text::new(LocalizedSkill(*jewel).to_string()))
                     .center_x()
                     .style(style_iced::Container::Ice)
                     .width(Length::Units(170)),
             )
         }
 
-        Column::new()
+        pure::column()
             .spacing(COLUMN_SPACING)
             .padding(5)
             .push(Space::with_width(Length::Units(5)))
             .push(
-                Container::new(
-                    Row::new()
+                pure::container(
+                    pure::row()
                         .spacing(BUTTON_SPACING)
                         .push(
-                            TextInput::new(
-                                &mut self.state_edit_text_input,
+                            pure::text_input(
                                 &InterfaceSymbol::NewBuildName.to_string(),
                                 &self.value_edit_text_input,
                                 Msg::EditTalismanName,
@@ -104,48 +105,38 @@ impl DetailsPage for MainApp {
                             .width(Length::Units(200)),
                         )
                         .push(
-                            Button::new(
-                                &mut self.state_save_talismans_button,
-                                Text::new(InterfaceSymbol::SaveBuild),
-                            )
-                            .style(style_iced::Button::Add)
-                            .on_press(if on_save_builds {
-                                Msg::EditSavedBuild(self.details_build_name.clone())
-                            } else {
-                                Msg::SaveBuild(build_index)
-                            }),
+                            pure::button(Text::new(InterfaceSymbol::SaveBuild))
+                                .style(style_iced::Button::Add)
+                                .on_press(if on_save_builds {
+                                    Msg::EditSavedBuild(self.details_build_name.clone())
+                                } else {
+                                    Msg::SaveBuild(build_index)
+                                }),
                         ),
                 )
                 .width(Length::Fill)
                 .center_x(),
             )
             .push(row_title.push(Space::with_width(Length::Units(SCROLL_PADDING))))
-            .push(
-                Scrollable::new(&mut self.scroll)
+            .push(pure::scrollable(
+                pure::column()
                     .padding(SCROLL_PADDING)
                     .height(Length::Fill)
                     .spacing(10)
                     .align_items(Alignment::Center)
                     .push(row)
                     .push(
-                        Container::new(weapon_jewels_row)
+                        pure::container(weapon_jewels_row)
                             .width(Length::Fill)
                             .center_x(),
                     ),
-            )
-            .push(
-                Row::new().push(Space::with_width(Length::Fill)).push(
-                    Button::new(
-                        &mut self.state_lang_button,
-                        Text::new(InterfaceSymbol::Back),
-                    )
-                    .on_press(if on_save_builds {
-                        Msg::ChangePage(Page::Builds)
-                    } else {
-                        Msg::ChangePage(Page::Main)
-                    }),
-                ),
-            )
-            .into()
+            ))
+            .push(pure::row().push(Space::with_width(Length::Fill)).push(
+                pure::button(Text::new(InterfaceSymbol::Back)).on_press(if on_save_builds {
+                    Msg::ChangePage(Page::Builds)
+                } else {
+                    Msg::ChangePage(Page::Main)
+                }),
+            ))
     }
 }

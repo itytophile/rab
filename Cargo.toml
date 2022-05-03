@@ -15,7 +15,7 @@ members = ["rab-core"]
 [dependencies]
 serde = "1.0"
 ron = "0.7"
-iced = { version = "0.4", features = ["svg", "tokio"] }
+iced = { version = "0.4", features = ["svg", "tokio", "pure"] }
 once_cell = "1.9"
 lexical-sort = "0.3"
 reqwest = "0.11"

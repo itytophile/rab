@@ -7,7 +7,7 @@ mod file;
 
 use std::sync::Mutex;
 
-use iced::{Application, Settings};
+use iced::{Settings, pure::Application};
 use locale::Locale;
 use once_cell::sync::Lazy;
 

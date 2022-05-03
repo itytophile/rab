@@ -6,12 +6,10 @@ mod main_page;
 mod no_files_page;
 mod talisman_page;
 
-use std::{
-    collections::HashMap,
-    fs::{self, canonicalize},
-    path::Path,
+use self::{
+    builds_page::BuildsPage, details_page::DetailsPage, lang_page::LangPage, main_page::MainPage,
+    no_files_page::NoFilesPage, talisman_page::TalismanPage,
 };
-
 use crate::{
     file::{get_armor_list, get_talismans, save_talismans_to_file},
     locale::{get_locales, Locale, LocalizedSkill},
@@ -20,32 +18,24 @@ use crate::{
     update::download_armors_and_locales,
     ARMORS_PATH, LOCALE_DIR_PATH,
 };
-
+use iced::{executor, pure, Command, Length};
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
-};
-
-use iced::{
-    button, executor, pick_list, scrollable, slider, text_input, Application, Command, Container,
-    Element, Length,
 };
 use ron::{
     de::from_reader,
     ser::{to_string_pretty, PrettyConfig},
     Error,
 };
-
-use self::{
-    builds_page::BuildsPage, details_page::DetailsPage, lang_page::LangPage, main_page::MainPage,
-    no_files_page::NoFilesPage, talisman_page::TalismanPage,
+use std::{
+    collections::HashMap,
+    fs::{self, canonicalize},
+    path::Path,
 };
 
 struct WishField {
-    state_pick_list: pick_list::State<LocalizedSkill>,
     selected: LocalizedSkill,
-    state_remove_button: button::State,
-    state_slider: slider::State,
     value_slider: u8,
 }
 
@@ -53,26 +43,15 @@ impl Default for WishField {
     fn default() -> Self {
         Self {
             value_slider: 1,
-            state_pick_list: Default::default(),
             selected: Default::default(),
-            state_remove_button: Default::default(),
-            state_slider: Default::default(),
         }
     }
 }
 
 #[derive(Default)]
 pub struct MainApp {
-    scroll: scrollable::State,
-    state_builds_scroll: scrollable::State,
-    state_desc_scroll: scrollable::State,
     wish_fields: Vec<WishField>,
 
-    state_add_wish_button: button::State,
-    state_talisman_button: button::State,
-    state_search_button: button::State,
-
-    state_filter_text_input: text_input::State,
     value_filter_text_input: String,
 
     sorted_wish_choices: Vec<LocalizedSkill>,
@@ -85,18 +64,8 @@ pub struct MainApp {
     legs: Vec<Armor>,
 
     talismans: Vec<Armor>,
-    states_talisman_button: Vec<button::State>,
 
     builds: Vec<Build>,
-    states_build_button: Vec<(
-        button::State,
-        button::State,
-        button::State,
-        button::State,
-        button::State,
-        button::State, //talisman
-        button::State, //weapon
-    )>,
 
     armor_desc: Option<(Armor, [Option<Skill>; 3])>,
 
@@ -104,66 +73,34 @@ pub struct MainApp {
 
     selected_gender: Gender,
 
-    states_values_slider_weapon_slot: [(slider::State, u8); 3],
-
-    state_talisman_scroll: scrollable::State,
+    states_values_slider_weapon_slot: [u8; 3],
     selected_talisman: Option<usize>,
-    state_talisman_desc_scroll: scrollable::State,
-
-    state_edit_button: button::State,
 
     is_editing: bool,
 
-    states_values_slider_talisman_slot: [(slider::State, u8); 3],
-    state_edit_text_input: text_input::State,
+    states_values_slider_talisman_slot: [u8; 3],
     value_edit_text_input: String,
 
     edit_wish_fields: Vec<WishField>,
-    state_edit_add_skill_button: button::State,
-
-    state_cancel_button: button::State,
-    state_remove_talisman_button: button::State,
-
-    state_save_talismans_button: button::State,
-    state_discard_talismans_button: button::State,
-
-    state_lang_button: button::State,
 
     locales: HashMap<String, Locale>,
     selected_locale: String,
 
-    state_buttons_locale: Vec<button::State>,
-
     profile: HashMap<String, String>,
 
     theme: style_iced::Theme,
-    state_theme_button: button::State,
 
-    state_update_button: button::State,
     update_state: UpdateState,
 
     details_build_index: usize,
 
     saved_builds: HashMap<String, Build>,
 
-    state_builds_menu_button: button::State,
-    states_saved_builds_button: Vec<SavedBuildsButtonStates>,
     details_build_name: String,
 
     focused_build: Option<Build>,
     total_skills_and_amounts_focused_build: Vec<(Skill, u8)>, // to not sort everytime
 }
-
-type SavedBuildsButtonStates = (
-    button::State,
-    button::State,
-    button::State,
-    button::State,
-    button::State,
-    button::State, //talisman
-    button::State, //weapon
-    button::State, //remove
-);
 
 #[derive(Clone, Copy)]
 enum UpdateState {
@@ -246,7 +183,7 @@ const BUILDS_PATH: &str = "builds.ron";
 
 impl MainApp {
     fn clear_talisman_editor(&mut self) {
-        for (_, slider_value) in self.states_values_slider_talisman_slot.iter_mut() {
+        for slider_value in self.states_values_slider_talisman_slot.iter_mut() {
             *slider_value = 0
         }
         self.edit_wish_fields.clear();
@@ -270,8 +207,6 @@ impl MainApp {
                 HashMap::with_capacity(0)
             }
         };
-
-        self.state_buttons_locale = vec![Default::default(); self.locales.len()];
 
         *super::LOCALE.lock().unwrap() = self.locales.get(&self.selected_locale).cloned();
     }
@@ -350,7 +285,7 @@ fn get_saved_builds(path: &str) -> Result<HashMap<String, Build>, Error> {
     from_reader(fs::File::open(path)?)
 }
 
-impl Application for MainApp {
+impl pure::Application for MainApp {
     type Message = Msg;
     type Executor = executor::Default;
     type Flags = ();
@@ -371,7 +306,7 @@ impl Application for MainApp {
                 vec![]
             }
         };
-        let states_talisman_button = vec![Default::default(); talismans.len()];
+
         let mut page = Page::Main;
         let (helmets, chests, arms, waists, legs) = match get_all_armors_from_file() {
             Ok(lists) => lists,
@@ -416,8 +351,6 @@ impl Application for MainApp {
             _ => style_iced::Theme::Dark,
         };
 
-        let state_buttons_locale = vec![Default::default(); locales.len()];
-
         *super::LOCALE.lock().unwrap() = locales.get(&selected_locale).cloned();
 
         let mut sorted_wish_choices: Vec<LocalizedSkill> =
@@ -438,8 +371,6 @@ impl Application for MainApp {
             }
         };
 
-        let states_saved_builds_button = vec![Default::default(); saved_builds.len()];
-
         (
             Self {
                 wish_fields: vec![WishField::default()],
@@ -450,7 +381,6 @@ impl Application for MainApp {
                 legs,
                 chests,
                 talismans,
-                states_talisman_button,
 
                 filtered_wish_choices,
                 sorted_wish_choices,
@@ -462,14 +392,11 @@ impl Application for MainApp {
                 locales,
                 selected_locale,
 
-                state_buttons_locale,
-
                 profile,
 
                 theme,
 
                 saved_builds,
-                states_saved_builds_button,
 
                 ..Self::default()
             },
@@ -510,12 +437,11 @@ impl Application for MainApp {
                     },
                     self.selected_gender,
                     [
-                        self.states_values_slider_weapon_slot[0].1,
-                        self.states_values_slider_weapon_slot[1].1,
-                        self.states_values_slider_weapon_slot[2].1,
+                        self.states_values_slider_weapon_slot[0],
+                        self.states_values_slider_weapon_slot[1],
+                        self.states_values_slider_weapon_slot[2],
                     ],
                 );
-                self.states_build_button = vec![Default::default(); self.builds.len()];
             }
             Msg::ArmorDesc(option) => self.armor_desc = option,
             Msg::FilterChanged(text) => {
@@ -534,7 +460,7 @@ impl Application for MainApp {
             }
             Msg::GenderChanged(gender) => self.selected_gender = gender,
             Msg::WeaponSlotChanged(index, value) => {
-                self.states_values_slider_weapon_slot[index].1 = value
+                self.states_values_slider_weapon_slot[index] = value
             }
             Msg::SelectTalisman(index) => self.selected_talisman = index,
             Msg::EditTalisman => {
@@ -547,11 +473,10 @@ impl Application for MainApp {
                     self.edit_wish_fields.push(WishField {
                         selected: LocalizedSkill(skill),
                         value_slider: amount,
-                        ..Default::default()
                     })
                 }
 
-                for (slot, (_, slider_value)) in talisman
+                for (slot, slider_value) in talisman
                     .slots
                     .iter()
                     .zip(self.states_values_slider_talisman_slot.iter_mut())
@@ -571,8 +496,8 @@ impl Application for MainApp {
                 talisman.slots = self
                     .states_values_slider_talisman_slot
                     .iter()
-                    .map(|(_, slot)| *slot)
-                    .filter(|slot| *slot > 0)
+                    .filter(|slot| **slot > 0)
+                    .copied()
                     .collect();
                 self.clear_talisman_editor()
             }
@@ -581,7 +506,7 @@ impl Application for MainApp {
                 self.clear_talisman_editor()
             }
             Msg::TalismanSlotChanged(index, value) => {
-                self.states_values_slider_talisman_slot[index].1 = value
+                self.states_values_slider_talisman_slot[index] = value
             }
             Msg::EditTalismanName(name) => self.value_edit_text_input = name,
             Msg::EditSkillSelected(key, wish) => {
@@ -598,7 +523,6 @@ impl Application for MainApp {
             Msg::RemoveTalisman => {
                 let index = self.selected_talisman.unwrap();
                 self.talismans.remove(index);
-                self.states_talisman_button.remove(index);
                 self.clear_talisman_editor();
                 self.is_editing = false;
                 self.selected_talisman = None;
@@ -609,7 +533,6 @@ impl Application for MainApp {
                     skills: vec![(Skill::Botanist, 1)],
                     ..Default::default()
                 });
-                self.states_talisman_button.push(Default::default())
             }
             Msg::SaveTalismans => match save_talismans_to_file(&self.talismans, TALISMANS_PATH) {
                 Ok(path) => println!("Talismans saved to {}", path),
@@ -630,10 +553,8 @@ impl Application for MainApp {
                         vec![]
                     }
                 };
-                let states_talisman_button = vec![Default::default(); talismans.len()];
 
                 self.talismans = talismans;
-                self.states_talisman_button = states_talisman_button;
             }
             Msg::ChangePage(page) => self.page = page,
             Msg::LocaleChanged(new_locale) => {
@@ -717,16 +638,10 @@ impl Application for MainApp {
                 self.page = Page::Details(false)
             }
             Msg::SaveBuild(index) => {
-                if self
-                    .saved_builds
-                    .insert(
-                        self.value_edit_text_input.clone(),
-                        self.builds[index].clone(),
-                    )
-                    .is_none()
-                {
-                    self.states_saved_builds_button.push(Default::default())
-                };
+                self.saved_builds.insert(
+                    self.value_edit_text_input.clone(),
+                    self.builds[index].clone(),
+                );
 
                 self.page = Page::Builds;
                 self.save_builds();
@@ -757,16 +672,19 @@ impl Application for MainApp {
         Command::none()
     }
 
-    fn view(&mut self) -> Element<Msg> {
+    fn view(&self) -> pure::Element<Msg> {
         let theme = self.theme;
 
-        let container = Container::new(match self.page {
-            Page::Main => self.get_main_page(),
-            Page::Talisman => self.get_talisman_page(),
-            Page::NoFiles => self.get_no_files_page(),
-            Page::Lang => self.get_lang_page(),
-            Page::Details(on_save_builds) => self.get_details_page(on_save_builds),
-            Page::Builds => self.get_builds_page(),
+        // can't use pure::Element::<Msg>::from()
+        let main: pure::Element<Msg> = self.get_main_page().into();
+
+        let container = pure::container(match self.page {
+            Page::Main => main,
+            Page::Talisman => self.get_talisman_page().into(),
+            Page::NoFiles => self.get_no_files_page().into(),
+            Page::Lang => self.get_lang_page().into(),
+            Page::Details(on_save_builds) => self.get_details_page(on_save_builds).into(),
+            Page::Builds => self.get_builds_page().into(),
         })
         .width(Length::Fill)
         .height(Length::Fill)

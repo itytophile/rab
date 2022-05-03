@@ -1,11 +1,3 @@
-use iced::{
-    alignment,
-    widget::svg::{Handle, Svg},
-    Alignment, Button, Column, Container, Element, Length, Row, Rule, Scrollable, Space, Text,
-};
-
-use crate::{locale::InterfaceSymbol, style_iced};
-
 use super::{
     common_elements::{
         build_part_to_button, ARM_ICON, BUTTON_SPACING, CHEST_ICON, HELMET_ICON, ICON_SIZE,
@@ -13,15 +5,21 @@ use super::{
     },
     MainApp, Msg, Page,
 };
+use crate::{locale::InterfaceSymbol, style_iced};
+use iced::{
+    alignment, pure,
+    widget::svg::{Handle, Svg},
+    Alignment, Length, Rule, Space, Text,
+};
 
 pub trait BuildsPage {
-    fn get_builds_page(&mut self) -> Element<Msg>;
+    fn get_builds_page(&self) -> pure::widget::Container<'_, Msg>;
 }
 
 impl BuildsPage for MainApp {
-    fn get_builds_page(&'_ mut self) -> Element<'_, Msg> {
+    fn get_builds_page(&'_ self) -> pure::widget::Container<'_, Msg> {
         let builds = &self.saved_builds;
-        let mut builds_scrolls = Scrollable::new(&mut self.state_builds_scroll)
+        let mut builds_scrolls = pure::column()
             .align_items(Alignment::Center)
             .spacing(10)
             .padding(SCROLL_PADDING);
@@ -29,13 +27,8 @@ impl BuildsPage for MainApp {
         if size == 0 {
             builds_scrolls = builds_scrolls.push(Text::new(InterfaceSymbol::NoResult));
         } else {
-            for ((key, (name, build)), state_button) in builds
-                .iter()
-                .enumerate()
-                .zip(self.states_saved_builds_button.iter_mut())
-            {
-                let mut details_button = Button::new(
-                    &mut state_button.6,
+            for (key, (name, build)) in builds.iter().enumerate() {
+                let mut details_button = pure::button(
                     Text::new(name)
                         .width(Length::Units(200))
                         .horizontal_alignment(alignment::Horizontal::Center),
@@ -44,12 +37,11 @@ impl BuildsPage for MainApp {
                 // the icons
                 .style(style_iced::Button::Talisman);
                 details_button = details_button.on_press(Msg::SavedBuildDetails(name.clone()));
-                let row_build = Row::new()
+                let row_build = pure::row()
                     .align_items(Alignment::Center)
                     .spacing(BUTTON_SPACING)
                     .push(
-                        Button::new(
-                            &mut state_button.7,
+                        pure::button(
                             Text::new(InterfaceSymbol::Remove)
                                 .width(Length::Units(100))
                                 .horizontal_alignment(alignment::Horizontal::Center),
@@ -59,12 +51,12 @@ impl BuildsPage for MainApp {
                         .width(Length::Units(100)),
                     )
                     .push(details_button)
-                    .push(build_part_to_button(&mut state_button.0, &build.helmet))
-                    .push(build_part_to_button(&mut state_button.1, &build.chest))
-                    .push(build_part_to_button(&mut state_button.2, &build.arm))
-                    .push(build_part_to_button(&mut state_button.3, &build.waist))
-                    .push(build_part_to_button(&mut state_button.4, &build.leg))
-                    .push(build_part_to_button(&mut state_button.5, &build.talisman));
+                    .push(build_part_to_button(&build.helmet))
+                    .push(build_part_to_button(&build.chest))
+                    .push(build_part_to_button(&build.arm))
+                    .push(build_part_to_button(&build.waist))
+                    .push(build_part_to_button(&build.leg))
+                    .push(build_part_to_button(&build.talisman));
                 builds_scrolls = builds_scrolls.push(row_build);
                 if key < size - 1 {
                     builds_scrolls = builds_scrolls.push(Rule::horizontal(1))
@@ -79,7 +71,7 @@ impl BuildsPage for MainApp {
             SCROLL_PADDING - BUTTON_SPACING
         };
 
-        let mut col_titles = Row::new()
+        let mut col_titles = pure::row()
             .spacing(BUTTON_SPACING)
             .push(Space::with_width(Length::Units(space_width)))
             .push(Space::with_width(Length::Units(200)))
@@ -94,28 +86,28 @@ impl BuildsPage for MainApp {
             TALISMAN_ICON.to_vec(),
         ] {
             col_titles = col_titles.push(
-                Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
-                    .width(Length::Fill)
-                    .center_x(),
+                pure::container(
+                    Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)),
+                )
+                .width(Length::Fill)
+                .center_x(),
             );
         }
-        Container::new(
-            Column::new()
+        pure::container(
+            pure::column()
                 .push(col_titles.push(Space::with_width(Length::Units(space_width))))
-                .push(builds_scrolls.width(Length::Fill).height(Length::Fill))
+                .push(pure::scrollable(
+                    builds_scrolls.width(Length::Fill).height(Length::Fill),
+                ))
                 .push(
-                    Row::new().push(Space::with_width(Length::Fill)).push(
-                        Button::new(
-                            &mut self.state_lang_button,
-                            Text::new(InterfaceSymbol::Back),
-                        )
-                        .on_press(Msg::ChangePage(Page::Main)),
+                    pure::row().push(Space::with_width(Length::Fill)).push(
+                        pure::button(Text::new(InterfaceSymbol::Back))
+                            .on_press(Msg::ChangePage(Page::Main)),
                     ),
                 ),
         )
         .padding(5)
         .width(Length::Fill)
         .height(Length::Fill)
-        .into()
     }
 }

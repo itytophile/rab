@@ -1,25 +1,19 @@
-use std::cmp::Reverse;
-
-use iced::{
-    alignment, button, scrollable, text_input,
-    widget::svg::{Handle, Svg},
-    Alignment, Button, Column, Container, Length, PickList, Row, Rule, Scrollable, Slider, Space,
-    Text, TextInput,
-};
-
+use super::{Msg, UpdateState, WishField};
+use crate::locale::InterfaceSymbol;
 use crate::{
     locale::{LocalizedArmor, LocalizedSkill},
     style_iced,
 };
-
+use iced::{
+    alignment, pure,
+    widget::svg::{Handle, Svg},
+    Alignment, Length, Rule, Space, Text,
+};
 use rab_core::{
     armor_and_skills::{Armor, Skill},
     build_search::{Build, Jewels},
 };
-
-use super::{Msg, UpdateState, WishField};
-
-use crate::locale::InterfaceSymbol;
+use std::cmp::Reverse;
 
 pub(super) const HEIGHT_BIG_BUTTON: u16 = 60;
 pub(super) const BUTTON_SPACING: u16 = 10;
@@ -45,34 +39,17 @@ pub(super) const WAIST_ICON: &[u8] = include_bytes!("icons/waist.svg");
 pub(super) const LEG_ICON: &[u8] = include_bytes!("icons/leg.svg");
 pub(super) const TALISMAN_ICON: &[u8] = include_bytes!("icons/talisman.svg");
 
-pub(super) fn get_column_builds_found<'a>(
-    state_builds_scroll: &'a mut scrollable::State,
-    builds: &'a [Build],
-    states_build_button: &'a mut [(
-        button::State,
-        button::State,
-        button::State,
-        button::State,
-        button::State,
-        button::State, // talisman
-        button::State, // weapon
-    )],
-) -> Column<'a, Msg> {
-    let mut builds_scrolls = Scrollable::new(state_builds_scroll)
+pub(super) fn get_column_builds_found(builds: &[Build]) -> pure::widget::Column<Msg> {
+    let mut builds_column = pure::column()
         .align_items(Alignment::Center)
         .spacing(10)
         .padding(SCROLL_PADDING);
     let size = builds.len();
     if size == 0 {
-        builds_scrolls = builds_scrolls.push(Text::new(InterfaceSymbol::NoResult));
+        builds_column = builds_column.push(Text::new(InterfaceSymbol::NoResult));
     } else {
-        for ((key, build), state_button) in builds
-            .iter()
-            .enumerate()
-            .zip(states_build_button.iter_mut())
-        {
-            let mut details_button = Button::new(
-                &mut state_button.6,
+        for (key, build) in builds.iter().enumerate() {
+            let mut details_button = pure::button(
                 Text::new("?")
                     .vertical_alignment(alignment::Vertical::Center)
                     .horizontal_alignment(alignment::Horizontal::Center),
@@ -84,19 +61,19 @@ pub(super) fn get_column_builds_found<'a>(
             }
             */
             details_button = details_button.on_press(Msg::BuildDetails(key));
-            let row_build = Row::new()
+            let row_build = pure::row()
                 .align_items(Alignment::Center)
                 .spacing(BUTTON_SPACING)
                 .push(details_button.width(Length::Units(DETAIL_BUTTON_SIZE)))
-                .push(build_part_to_button(&mut state_button.0, &build.helmet))
-                .push(build_part_to_button(&mut state_button.1, &build.chest))
-                .push(build_part_to_button(&mut state_button.2, &build.arm))
-                .push(build_part_to_button(&mut state_button.3, &build.waist))
-                .push(build_part_to_button(&mut state_button.4, &build.leg))
-                .push(build_part_to_button(&mut state_button.5, &build.talisman));
-            builds_scrolls = builds_scrolls.push(row_build);
+                .push(build_part_to_button(&build.helmet))
+                .push(build_part_to_button(&build.chest))
+                .push(build_part_to_button(&build.arm))
+                .push(build_part_to_button(&build.waist))
+                .push(build_part_to_button(&build.leg))
+                .push(build_part_to_button(&build.talisman));
+            builds_column = builds_column.push(row_build);
             if key < size - 1 {
-                builds_scrolls = builds_scrolls.push(Rule::horizontal(1))
+                builds_column = builds_column.push(Rule::horizontal(1))
             }
         }
     }
@@ -108,7 +85,7 @@ pub(super) fn get_column_builds_found<'a>(
         SCROLL_PADDING - BUTTON_SPACING
     };
 
-    let mut col_titles = Row::new()
+    let mut col_titles = pure::row()
         .spacing(BUTTON_SPACING)
         .push(Space::with_width(Length::Units(space_width)))
         .push(Space::with_width(Length::Units(DETAIL_BUTTON_SIZE)));
@@ -122,49 +99,40 @@ pub(super) fn get_column_builds_found<'a>(
         TALISMAN_ICON.to_vec(),
     ] {
         col_titles = col_titles.push(
-            Container::new(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
+            pure::container(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
                 .width(Length::Fill)
                 .center_x(),
         );
     }
 
-    Column::new()
+    pure::column()
         .push(col_titles.push(Space::with_width(Length::Units(space_width))))
-        .push(builds_scrolls.width(Length::Fill))
+        .push(pure::scrollable(builds_column.width(Length::Fill)))
 }
 
 pub(super) fn get_wishfield_row<'a>(
-    wish_field: &'a mut WishField,
+    wish_field: &'a WishField,
     skill_list: &'a [LocalizedSkill],
     disable_remove_button: bool,
     on_remove: Msg,
     on_skill_selected: impl Fn(LocalizedSkill) -> Msg + 'static,
     on_slider_changed: impl Fn(u8) -> Msg + 'static,
-) -> Row<'a, Msg> {
-    let pick_list = PickList::new(
-        &mut wish_field.state_pick_list,
-        skill_list,
-        Some(wish_field.selected),
-        on_skill_selected,
-    )
-    .width(Length::Units(200));
-    let mut remove_button = Button::new(
-        &mut wish_field.state_remove_button,
-        Text::new(InterfaceSymbol::Remove),
-    )
-    .style(style_iced::Button::Remove);
+) -> pure::widget::Row<'a, Msg> {
+    let pick_list = pure::pick_list(skill_list, Some(wish_field.selected), on_skill_selected)
+        .width(Length::Units(200));
+    let mut remove_button =
+        pure::button(Text::new(InterfaceSymbol::Remove)).style(style_iced::Button::Remove);
     if !disable_remove_button {
         remove_button = remove_button.on_press(on_remove);
     }
-    let slider = Slider::new(
-        &mut wish_field.state_slider,
+    let slider = pure::slider(
         1..=wish_field.selected.get_limit(),
         wish_field.value_slider,
         on_slider_changed,
     )
     .width(Length::Units(100));
     let text = Text::new(format!("{}", wish_field.value_slider));
-    Row::new()
+    pure::row()
         .spacing(10)
         .push(pick_list)
         .push(slider)
@@ -172,12 +140,8 @@ pub(super) fn get_wishfield_row<'a>(
         .push(remove_button)
 }
 
-pub(super) fn get_skill_filter<'a>(
-    state: &'a mut text_input::State,
-    value: &str,
-) -> TextInput<'a, Msg> {
-    TextInput::new(
-        state,
+pub(super) fn get_skill_filter<'a>(value: &str) -> pure::widget::TextInput<'a, Msg> {
+    pure::text_input(
         &InterfaceSymbol::SkillFilter.to_string(),
         value,
         Msg::FilterChanged,
@@ -186,12 +150,10 @@ pub(super) fn get_skill_filter<'a>(
 }
 
 pub(super) fn build_part_to_button<'a>(
-    state: &'a mut button::State,
     build_part: &Option<(Armor, Jewels)>,
-) -> Button<'a, Msg> {
-    let button = Button::new(
-        state,
-        Container::new(Text::new(if let Some((armor, _)) = build_part {
+) -> pure::widget::Button<'a, Msg> {
+    let button = pure::button(
+        pure::container(Text::new(if let Some((armor, _)) = build_part {
             LocalizedArmor(armor).to_string()
         } else {
             InterfaceSymbol::Free.to_string()
@@ -211,14 +173,12 @@ pub(super) fn build_part_to_button<'a>(
     }
 }
 
-pub(super) fn update_button(
-    state: &'_ mut button::State,
+pub(super) fn update_button<'a>(
     update_state: UpdateState,
     msg: Msg,
-) -> Button<'_, Msg> {
-    let b = Button::new(
-        state,
-        Row::new()
+) -> pure::widget::Button<'a, Msg> {
+    let b = pure::button(
+        pure::row()
             .spacing(BUTTON_SPACING)
             .height(Length::Fill)
             .push(Svg::new(Handle::from_memory(match update_state {
@@ -244,9 +204,9 @@ pub(super) fn update_button(
     }
 }
 
-pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<Msg> {
+pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> pure::widget::Column<Msg> {
     if let Some((armor, jewel_skills)) = armor {
-        let mut col_armor_stats = Column::new()
+        let mut col_armor_stats = pure::column()
             .align_items(Alignment::Center)
             .spacing(5)
             .push(Text::new(LocalizedArmor(armor).to_string()));
@@ -279,10 +239,10 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
             ),
         ] {
             col_armor_stats = col_armor_stats.push(
-                Row::new()
+                pure::row()
                     .spacing(10)
                     .push(
-                        Container::new(Text::new(name))
+                        pure::container(Text::new(name))
                             .width(Length::Units(70))
                             .center_x()
                             .style(style),
@@ -337,7 +297,7 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
             col_armor_stats = col_armor_stats.push(if let Some(skill) = skill {
                 jewel_on_slot(&skill, slot)
             } else {
-                Container::new(Text::new(
+                pure::container(Text::new(
                     InterfaceSymbol::TemplateFreeSlot
                         .to_string()
                         .replace("{size}", &slot.to_string()),
@@ -350,12 +310,12 @@ pub(super) fn armor_desc_to_element(armor: &Option<(Armor, Jewels)>) -> Column<M
 
         col_armor_stats
     } else {
-        Column::new()
+        pure::column()
     }
 }
 
-pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> Container<'a, Msg> {
-    Container::new(Text::new(
+pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> pure::widget::Container<'a, Msg> {
+    pure::container(Text::new(
         InterfaceSymbol::TemplateJewelOnSlot
             .to_string()
             .replace("{skill}", &LocalizedSkill(*skill).to_string())
@@ -368,8 +328,8 @@ pub(super) fn jewel_on_slot<'a>(skill: &Skill, slot: u8) -> Container<'a, Msg> {
 
 pub(super) const SKILL_AMOUNT_SIZE: u16 = 150;
 
-pub(super) fn skill_and_amount<'a>(skill: &Skill, amount: u8) -> Container<'a, Msg> {
-    Container::new(Text::new(format!("{} x{}", LocalizedSkill(*skill), amount)))
+pub(super) fn skill_and_amount<'a>(skill: &Skill, amount: u8) -> pure::widget::Container<'a, Msg> {
+    pure::container(Text::new(format!("{} x{}", LocalizedSkill(*skill), amount)))
         .width(Length::Units(SKILL_AMOUNT_SIZE))
         .center_x()
         .style(style_iced::Container::Fire)
