@@ -1,6 +1,6 @@
 use super::{
     common_elements::{
-        build_part_to_button, ARM_ICON, BUTTON_SPACING, CHEST_ICON, HELMET_ICON, ICON_SIZE,
+        build_part_to_button, ARM_ICON, BUTTON_SPACING, CHEST_ICON, HELMET_ICON, ICON_LENGTH,
         LEG_ICON, SCROLL_PADDING, TALISMAN_ICON, WAIST_ICON,
     },
     MainApp, Msg, Page,
@@ -78,16 +78,16 @@ impl BuildsPage for MainApp {
             .push(Space::with_width(Length::Units(100)));
 
         for icon in [
-            HELMET_ICON.to_vec(),
-            CHEST_ICON.to_vec(),
-            ARM_ICON.to_vec(),
-            WAIST_ICON.to_vec(),
-            LEG_ICON.to_vec(),
-            TALISMAN_ICON.to_vec(),
+            HELMET_ICON,
+            CHEST_ICON,
+            ARM_ICON,
+            WAIST_ICON,
+            LEG_ICON,
+            TALISMAN_ICON,
         ] {
             col_titles = col_titles.push(
                 pure::container(
-                    Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)),
+                    Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH),
                 )
                 .width(Length::Fill)
                 .center_x(),

@@ -1,7 +1,7 @@
 use super::{
     common_elements::{
         armor_desc_to_element, skill_and_amount, ARM_ICON, BUTTON_SPACING, CHEST_ICON,
-        COLUMN_SPACING, HELMET_ICON, ICON_SIZE, LEG_ICON, SCROLL_PADDING, SKILL_AMOUNT_SIZE,
+        COLUMN_SPACING, HELMET_ICON, ICON_LENGTH, LEG_ICON, SCROLL_PADDING, SKILL_AMOUNT_SIZE,
         TALISMAN_ICON, WAIST_ICON,
     },
     MainApp, Msg, Page,
@@ -29,16 +29,16 @@ impl DetailsPage for MainApp {
             .push(Space::with_width(Length::Units(SCROLL_PADDING)))
             .push(Space::with_width(Length::Units(SKILL_AMOUNT_SIZE)));
         for icon in [
-            HELMET_ICON.to_vec(),
-            CHEST_ICON.to_vec(),
-            ARM_ICON.to_vec(),
-            WAIST_ICON.to_vec(),
-            LEG_ICON.to_vec(),
-            TALISMAN_ICON.to_vec(),
+            HELMET_ICON,
+            CHEST_ICON,
+            ARM_ICON,
+            WAIST_ICON,
+            LEG_ICON,
+            TALISMAN_ICON,
         ] {
             row_title = row_title.push(
                 pure::container(
-                    Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)),
+                    Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH),
                 )
                 .width(Length::Fill)
                 .center_x(),

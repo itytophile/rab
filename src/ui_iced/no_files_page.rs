@@ -1,7 +1,7 @@
-use iced::{pure, Length};
+use iced::pure;
 
 use super::{
-    common_elements::{update_button, ICON_SIZE},
+    common_elements::{update_button, ICON_LENGTH},
     MainApp, Msg,
 };
 
@@ -11,6 +11,6 @@ pub trait NoFilesPage {
 
 impl NoFilesPage for MainApp {
     fn get_no_files_page(&self) -> pure::widget::Button<Msg> {
-        update_button(self.update_state, Msg::DownloadArmors).height(Length::Units(ICON_SIZE))
+        update_button(self.update_state, Msg::DownloadArmors).height(ICON_LENGTH)
     }
 }

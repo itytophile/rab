@@ -7,7 +7,7 @@ use rab_core::armor_and_skills::Gender;
 use super::{
     common_elements::{
         armor_desc_to_element, get_column_builds_found, get_skill_filter, get_wishfield_row,
-        update_button, BUTTON_SPACING, COLUMN_SPACING, FILTER_INPUT_WIDTH, GLOBE_ICON, ICON_SIZE,
+        update_button, BUTTON_SPACING, COLUMN_SPACING, FILTER_INPUT_WIDTH, GLOBE_ICON, ICON_LENGTH,
         LEFT_COLUMN_WIDTH, MOON_ICON, SCROLL_PADDING, SUN_ICON,
     },
     MainApp, Msg, Page,
@@ -119,28 +119,23 @@ impl MainPage for MainApp {
             .push(get_column_builds_found(&self.builds).height(Length::Fill))
             .push(
                 pure::row()
-                    .height(Length::Units(ICON_SIZE))
+                    .height(ICON_LENGTH)
                     .spacing(BUTTON_SPACING)
                     .push(Space::with_width(Length::Fill))
-                    .push(update_button(self.update_state, Msg::UpdateArmors).height(Length::Fill))
+                    .push(update_button(self.update_state, Msg::UpdateArmors).height(Length::Fill).width(Length::Shrink))
                     .push(
                         pure::button(match self.theme {
-                            style_iced::Theme::Dark => Svg::new(Handle::from_memory(
-                                // I'm scared of the to_vec(), maybe I need
-                                // to create the vectors beforehand but
-                                // I'm just praying the compiler to optimize it.
-                                SUN_ICON.to_vec(),
-                            )),
-                            style_iced::Theme::Light => {
-                                Svg::new(Handle::from_memory(MOON_ICON.to_vec()))
-                            }
+                            style_iced::Theme::Dark => Svg::new(Handle::from_memory(SUN_ICON)),
+                            style_iced::Theme::Light => Svg::new(Handle::from_memory(MOON_ICON)),
                         })
-                        .height(Length::Fill)
+                        .height(ICON_LENGTH)
+                        .width(ICON_LENGTH)
                         .on_press(Msg::ToggleTheme),
                     )
                     .push(
-                        pure::button(Svg::new(Handle::from_memory(GLOBE_ICON.to_vec())))
-                            .height(Length::Fill)
+                        pure::button(Svg::new(Handle::from_memory(GLOBE_ICON)))
+                            .height(ICON_LENGTH)
+                            .width(ICON_LENGTH)
                             .on_press(Msg::ChangePage(Page::Lang)),
                     ),
             );

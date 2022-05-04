@@ -21,7 +21,7 @@ pub(super) const COLUMN_SPACING: u16 = 10;
 pub(super) const FILTER_INPUT_WIDTH: u16 = 150;
 pub(super) const SCROLL_PADDING: u16 = 20;
 pub(super) const LEFT_COLUMN_WIDTH: u16 = 470;
-pub(super) const ICON_SIZE: u16 = 40;
+pub(super) const ICON_LENGTH: Length = Length::Units(40);
 pub(super) const DETAIL_BUTTON_SIZE: u16 = 20;
 
 pub(super) const CHECK_ICON: &[u8] = include_bytes!("icons/check-solid.svg");
@@ -91,15 +91,15 @@ pub(super) fn get_column_builds_found(builds: &[Build]) -> pure::widget::Column<
         .push(Space::with_width(Length::Units(DETAIL_BUTTON_SIZE)));
 
     for icon in [
-        HELMET_ICON.to_vec(),
-        CHEST_ICON.to_vec(),
-        ARM_ICON.to_vec(),
-        WAIST_ICON.to_vec(),
-        LEG_ICON.to_vec(),
-        TALISMAN_ICON.to_vec(),
+        HELMET_ICON,
+        CHEST_ICON,
+        ARM_ICON,
+        WAIST_ICON,
+        LEG_ICON,
+        TALISMAN_ICON,
     ] {
         col_titles = col_titles.push(
-            pure::container(Svg::new(Handle::from_memory(icon)).width(Length::Units(ICON_SIZE)))
+            pure::container(Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH))
                 .width(Length::Fill)
                 .center_x(),
         );
@@ -180,13 +180,15 @@ pub(super) fn update_button<'a>(
     let b = pure::button(
         pure::row()
             .spacing(BUTTON_SPACING)
-            .height(Length::Fill)
-            .push(Svg::new(Handle::from_memory(match update_state {
-                UpdateState::Initial => DOWNLOAD_ICON.to_vec(),
-                UpdateState::Done => CHECK_ICON.to_vec(),
-                UpdateState::Updating => SYNC_ICON.to_vec(),
-                UpdateState::Problem => CROSS_ICON.to_vec(),
-            })))
+            .push(
+                Svg::new(Handle::from_memory(match update_state {
+                    UpdateState::Initial => DOWNLOAD_ICON,
+                    UpdateState::Done => CHECK_ICON,
+                    UpdateState::Updating => SYNC_ICON,
+                    UpdateState::Problem => CROSS_ICON,
+                }))
+                .width(ICON_LENGTH),
+            )
             .push(
                 Text::new(match update_state {
                     UpdateState::Initial => InterfaceSymbol::UpdateArmors,
