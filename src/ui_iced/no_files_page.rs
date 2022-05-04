@@ -1,9 +1,8 @@
-use iced::pure;
-
 use super::{
     common_elements::{update_button, ICON_LENGTH},
     MainApp, Msg,
 };
+use iced::pure;
 
 pub trait NoFilesPage {
     fn get_no_files_page(&self) -> pure::widget::Button<Msg>;
