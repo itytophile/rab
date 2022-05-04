@@ -37,11 +37,9 @@ impl DetailsPage for MainApp {
             TALISMAN_ICON,
         ] {
             row_title = row_title.push(
-                pure::container(
-                    Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH),
-                )
-                .width(Length::Fill)
-                .center_x(),
+                pure::container(Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH))
+                    .width(Length::Fill)
+                    .center_x(),
             );
         }
         let build_index = self.details_build_index;
@@ -118,19 +116,21 @@ impl DetailsPage for MainApp {
                 .center_x(),
             )
             .push(row_title.push(Space::with_width(Length::Units(SCROLL_PADDING))))
-            .push(pure::scrollable(
-                pure::column()
-                    .padding(SCROLL_PADDING)
-                    .height(Length::Fill)
-                    .spacing(10)
-                    .align_items(Alignment::Center)
-                    .push(row)
-                    .push(
-                        pure::container(weapon_jewels_row)
-                            .width(Length::Fill)
-                            .center_x(),
-                    ),
-            ))
+            .push(
+                pure::scrollable(
+                    pure::column()
+                        .padding(SCROLL_PADDING)
+                        .spacing(10)
+                        .align_items(Alignment::Center)
+                        .push(row)
+                        .push(
+                            pure::container(weapon_jewels_row)
+                                .width(Length::Fill)
+                                .center_x(),
+                        ),
+                )
+                .height(Length::Fill),
+            )
             .push(pure::row().push(Space::with_width(Length::Fill)).push(
                 pure::button(Text::new(InterfaceSymbol::Back)).on_press(if on_save_builds {
                     Msg::ChangePage(Page::Builds)

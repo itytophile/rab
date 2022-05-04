@@ -52,9 +52,7 @@ impl TalismanPage for MainApp {
         let mut column = pure::column()
             .spacing(COLUMN_SPACING)
             .push(row_buttons)
-            .push(pure::scrollable(
-                talisman_scroll.height(Length::FillPortion(2)),
-            ));
+            .push(pure::scrollable(talisman_scroll).height(Length::FillPortion(2)));
 
         if let Some(index) = &self.selected_talisman {
             let view = if self.is_editing {
