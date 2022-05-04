@@ -86,19 +86,15 @@ impl BuildsPage for MainApp {
             TALISMAN_ICON,
         ] {
             col_titles = col_titles.push(
-                pure::container(
-                    Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH),
-                )
-                .width(Length::Fill)
-                .center_x(),
+                pure::container(Svg::new(Handle::from_memory(icon)).width(ICON_LENGTH))
+                    .width(Length::Fill)
+                    .center_x(),
             );
         }
         pure::container(
             pure::column()
                 .push(col_titles.push(Space::with_width(Length::Units(space_width))))
-                .push(pure::scrollable(
-                    builds_scrolls.width(Length::Fill).height(Length::Fill),
-                ))
+                .push(pure::scrollable(builds_scrolls.width(Length::Fill)).height(Length::Fill))
                 .push(
                     pure::row().push(Space::with_width(Length::Fill)).push(
                         pure::button(Text::new(InterfaceSymbol::Back))
