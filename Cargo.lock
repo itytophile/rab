@@ -1763,9 +1763,10 @@ dependencies = [
 [[package]]
 name = "rab-core"
 version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66fff30044cc76de33d3bf21248a9e5b6b9ccba4d1fe5a3aae3e5f25d5f99c7c"
 dependencies = [
  "itertools",
- "ron",
  "serde",
 ]
 
